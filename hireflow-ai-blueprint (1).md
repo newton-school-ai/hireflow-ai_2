@@ -1,11 +1,11 @@
-# HireFlow AI — Complete Project Blueprint
+# HireFlow AI - Complete Project Blueprint
 
 ## Intelligent Job Application & Hiring Agent + Career Prep System
 
 **Track:** AI Agents & Agentic Systems
 **Pod Size:** 5 (1 Maintainer + 4 Contributors)
 **Duration:** 5 Weeks | 8 Milestones
-**Framework:** Build → Understand → Defend
+**Framework:** Build -> Understand -> Defend
 
 ---
 
@@ -14,10 +14,10 @@
 HireFlow AI is not just a job application bot. It's a **career autopilot** with three distinct value layers:
 
 ```
-Layer 1: DISCOVER    → Find and rank the best jobs for YOU
-Layer 2: APPLY       → Tailor resume + apply (within YOUR weekly quota)
-Layer 3: PREPARE     → Give you a battle plan for every application
-Layer 4: HIRE (flip) → Help companies shortlist from their applicant pool
+Layer 1: DISCOVER    -> Find and rank the best jobs for YOU
+Layer 2: APPLY       -> Tailor resume + apply (within YOUR weekly quota)
+Layer 3: PREPARE     -> Give you a battle plan for every application
+Layer 4: HIRE (flip) -> Help companies shortlist from their applicant pool
 ```
 
 The user says:
@@ -37,99 +37,99 @@ HireFlow then:
 ## System Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         USER ONBOARDING                          │
-│  Master Profile → Weekly Quota (e.g. 10) → Preferences          │
-│  (resume, skills, experience, target roles, locations, salary)   │
-└────────────────────────────┬─────────────────────────────────────┘
-                             │
-                             ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    JOB DISCOVERY ENGINE                           │
-│  Career Page Scraper (Playwright) → Portal Aggregator            │
-│  → Spam/Quality Filter → Raw Job Pool (100+ jobs)                │
-└────────────────────────────┬─────────────────────────────────────┘
-                             │
-                             ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    JOB-PROFILE MATCH SCORER                      │
-│  Embedding-based similarity (JD ↔ Profile)                       │
-│  + Skill gap analysis + Location/salary filter                   │
-│  → Ranked list of ALL discovered jobs                            │
-└────────────────────────────┬─────────────────────────────────────┘
-                             │
-                             ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    WEEKLY QUOTA SELECTOR                          │
-│  User quota = 10 → Pick top 10 from ranked list                  │
-│  → Confirm with user (optional) or auto-proceed                  │
-│  → Generate Weekly Application Plan                              │
-└────────────────────────────┬─────────────────────────────────────┘
-                             │
-                    ┌────────┴────────┐
-                    ▼                 ▼
-┌─────────────────────────┐ ┌─────────────────────────────────────┐
-│   RESUME TAILORING      │ │    PREP GUIDE GENERATOR              │
-│   ENGINE (per job)      │ │    (per job)                         │
-│                         │ │                                       │
-│ Master Profile          │ │ JD Analysis                           │
-│   + JD Requirements     │ │   → Topics & Skills to Prepare       │
-│   → ATS-Optimized       │ │   → Expected Interview Rounds        │
-│     Tailored Resume     │ │   → Round-wise Focus Areas           │
-│   → PDF Generation      │ │   → Curated Resources                │
-│                         │ │   → Company-Specific Insights         │
-│ Resume saved &          │ │   → Similar Interview Experiences     │
-│ sent back to user       │ │                                       │
-└────────────┬────────────┘ └──────────────────┬──────────────────┘
-             │                                  │
-             ▼                                  │
-┌─────────────────────────┐                     │
-│   APPLICATION AGENT     │                     │
-│   (Playwright)          │                     │
-│                         │                     │
-│ Fill forms → Upload     │                     │
-│ resume → Submit         │                     │
-│ → Log result            │                     │
-└────────────┬────────────┘                     │
-             │                                  │
-             ▼                                  ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    WEEKLY REPORT TO USER                          │
-│                                                                   │
-│  "This week HireFlow applied to 10 jobs for you."                │
-│                                                                   │
-│  For each job:                                                    │
-│    ├── Company & Role                                            │
-│    ├── Match Score (87%)                                          │
-│    ├── Resume Used (PDF attached / link)                          │
-│    ├── Application Status (Applied / Failed / Needs Action)      │
-│    └── Preparation Guide                                         │
-│         ├── Key Topics: [RAG, LangChain, System Design]          │
-│         ├── Skill Gaps: [Docker — you should learn this]         │
-│         ├── Expected Rounds: 3 (HR → Technical → Founder)        │
-│         ├── Round-wise Focus                                     │
-│         │    ├── HR: Communication, motivation, salary            │
-│         │    ├── Technical: RAG implementation, LLM evaluation    │
-│         │    └── Founder: Product thinking, ownership examples    │
-│         ├── Resources                                            │
-│         │    ├── LangChain docs (link)                            │
-│         │    ├── RAG tutorial by (link)                           │
-│         │    └── Company blog / tech stack article (link)         │
-│         └── Company Intel                                        │
-│              ├── Tech stack used (from JD + career page)         │
-│              ├── Recent news / funding                           │
-│              └── Glassdoor interview pattern (if available)      │
-│                                                                   │
-└──────────────────────────────────────────────────────────────────┘
-             │
-             ▼
-┌──────────────────────────────────────────────────────────────────┐
-│              HIRING SIDE (OPTIONAL MODULE)                        │
-│                                                                   │
-│  Company gets 100+ applications →                                │
-│  Agent scores against JD → Ranks → Shortlists top 20-30 →       │
-│  Sends email to hiring team with summary report                  │
-└──────────────────────────────────────────────────────────────────┘
++------------------------------------------------------------------+
+|                         USER ONBOARDING                          |
+|  Master Profile -> Weekly Quota (e.g. 10) -> Preferences          |
+|  (resume, skills, experience, target roles, locations, salary)   |
++----------------------------+-------------------------------------+
+                             |
+                             v
++------------------------------------------------------------------+
+|                    JOB DISCOVERY ENGINE                           |
+|  Career Page Scraper (Playwright) -> Portal Aggregator            |
+|  -> Spam/Quality Filter -> Raw Job Pool (100+ jobs)                |
++----------------------------+-------------------------------------+
+                             |
+                             v
++------------------------------------------------------------------+
+|                    JOB-PROFILE MATCH SCORER                      |
+|  Embedding-based similarity (JD <-> Profile)                       |
+|  + Skill gap analysis + Location/salary filter                   |
+|  -> Ranked list of ALL discovered jobs                            |
++----------------------------+-------------------------------------+
+                             |
+                             v
++------------------------------------------------------------------+
+|                    WEEKLY QUOTA SELECTOR                          |
+|  User quota = 10 -> Pick top 10 from ranked list                  |
+|  -> Confirm with user (optional) or auto-proceed                  |
+|  -> Generate Weekly Application Plan                              |
++----------------------------+-------------------------------------+
+                             |
+                    +--------+--------+
+                    v                 v
++-------------------------+ +-------------------------------------+
+|   RESUME TAILORING      | |    PREP GUIDE GENERATOR              |
+|   ENGINE (per job)      | |    (per job)                         |
+|                         | |                                       |
+| Master Profile          | | JD Analysis                           |
+|   + JD Requirements     | |   -> Topics & Skills to Prepare       |
+|   -> ATS-Optimized       | |   -> Expected Interview Rounds        |
+|     Tailored Resume     | |   -> Round-wise Focus Areas           |
+|   -> PDF Generation      | |   -> Curated Resources                |
+|                         | |   -> Company-Specific Insights         |
+| Resume saved &          | |   -> Similar Interview Experiences     |
+| sent back to user       | |                                       |
++------------+------------+ +------------------+------------------+
+             |                                  |
+             v                                  |
++-------------------------+                     |
+|   APPLICATION AGENT     |                     |
+|   (Playwright)          |                     |
+|                         |                     |
+| Fill forms -> Upload     |                     |
+| resume -> Submit         |                     |
+| -> Log result            |                     |
++------------+------------+                     |
+             |                                  |
+             v                                  v
++------------------------------------------------------------------+
+|                    WEEKLY REPORT TO USER                          |
+|                                                                   |
+|  "This week HireFlow applied to 10 jobs for you."                |
+|                                                                   |
+|  For each job:                                                    |
+|    +-- Company & Role                                            |
+|    +-- Match Score (87%)                                          |
+|    +-- Resume Used (PDF attached / link)                          |
+|    +-- Application Status (Applied / Failed / Needs Action)      |
+|    +-- Preparation Guide                                         |
+|         +-- Key Topics: [RAG, LangChain, System Design]          |
+|         +-- Skill Gaps: [Docker - you should learn this]         |
+|         +-- Expected Rounds: 3 (HR -> Technical -> Founder)        |
+|         +-- Round-wise Focus                                     |
+|         |    +-- HR: Communication, motivation, salary            |
+|         |    +-- Technical: RAG implementation, LLM evaluation    |
+|         |    +-- Founder: Product thinking, ownership examples    |
+|         +-- Resources                                            |
+|         |    +-- LangChain docs (link)                            |
+|         |    +-- RAG tutorial by (link)                           |
+|         |    +-- Company blog / tech stack article (link)         |
+|         +-- Company Intel                                        |
+|              +-- Tech stack used (from JD + career page)         |
+|              +-- Recent news / funding                           |
+|              +-- Glassdoor interview pattern (if available)      |
+|                                                                   |
++------------------------------------------------------------------+
+             |
+             v
++------------------------------------------------------------------+
+|              HIRING SIDE (OPTIONAL MODULE)                        |
+|                                                                   |
+|  Company gets 100+ applications ->                                |
+|  Agent scores against JD -> Ranks -> Shortlists top 20-30 ->       |
+|  Sends email to hiring team with summary report                  |
++------------------------------------------------------------------+
 ```
 
 ---
@@ -197,12 +197,12 @@ Scrapes career pages and portals to build a pool of 100+ relevant openings per c
 | `stipend_salary` | Parsed (if available) |
 | `application_url` | Direct link |
 | `posting_date` | Parsed |
-| `selection_process` | Extracted (if mentioned) — critical for prep guide |
+| `selection_process` | Extracted (if mentioned) - critical for prep guide |
 | `company_website` | Scraped |
 | `source` | "lever" / "greenhouse" / "linkedin" / etc. |
 
 **Spam Filter:**
-NLP classifier trained on signals: vague JDs, unrealistic salary claims, missing company details, known spam patterns. Confidence threshold — below threshold, the job is flagged and excluded.
+NLP classifier trained on signals: vague JDs, unrealistic salary claims, missing company details, known spam patterns. Confidence threshold - below threshold, the job is flagged and excluded.
 
 ---
 
@@ -257,28 +257,28 @@ User says "10 per week." System picks top 10 from the ranked list and generates 
 **Weekly Application Plan (sent to user before execution):**
 
 ```
-═══════════════════════════════════════════════
-   HIREFLOW WEEKLY PLAN — Week of June 9, 2026
+===============================================
+   HIREFLOW WEEKLY PLAN - Week of June 9, 2026
    Quota: 10 jobs | Profile: Rahul Sharma
-═══════════════════════════════════════════════
+===============================================
 
-   #1  AIBridge — Agentic AI Intern
-       Match: 92% | Remote | ₹20-30k
+   #1  AIBridge - Agentic AI Intern
+       Match: 92% | Remote | 20-30k
        Skills Matched: 8/10 | Gap: TypeScript, Vercel AI SDK
    
-   #2  Lemon Tea Studio — Software Dev Intern (GenAI)
-       Match: 89% | Pune (Hybrid) | ₹25k
+   #2  Lemon Tea Studio - Software Dev Intern (GenAI)
+       Match: 89% | Pune (Hybrid) | 25k
        Skills Matched: 7/9 | Gap: Angular
    
-   #3  Augle AI — AI Engineer Intern
-       Match: 85% | Pune | ₹20k
+   #3  Augle AI - AI Engineer Intern
+       Match: 85% | Pune | 20k
        Skills Matched: 6/10 | Gap: PyTorch, Edge Deployment
    
    ... (7 more)
    
-   ─────────────────────────────────
+   ---------------------------------
    [Confirm & Apply All]  [Edit List]
-═══════════════════════════════════════════════
+===============================================
 ```
 
 ---
@@ -292,28 +292,28 @@ For each of the N selected jobs, generates a unique ATS-optimized resume tailore
 
 ```
 Master Profile + JD
-       │
-       ▼
+       |
+       v
   Skill Extraction (from JD)
-       │
-       ▼
+       |
+       v
   Skill Mapping (which user skills match, which projects demonstrate them)
-       │
-       ▼
+       |
+       v
   Resume Section Generation (RAG)
-       ├── Summary: Tailored to role
-       ├── Skills: Reordered by JD priority
-       ├── Experience: Relevant bullets emphasized
-       ├── Projects: Top 2-3 most relevant selected
-       └── Education: Standard
-       │
-       ▼
+       +-- Summary: Tailored to role
+       +-- Skills: Reordered by JD priority
+       +-- Experience: Relevant bullets emphasized
+       +-- Projects: Top 2-3 most relevant selected
+       +-- Education: Standard
+       |
+       v
   ATS Formatting (clean, parseable, keyword-rich)
-       │
-       ▼
+       |
+       v
   PDF Generation (using LaTeX / ReportLab)
-       │
-       ▼
+       |
+       v
   Resume stored: /resumes/{user_id}/{job_id}_resume.pdf
   Resume sent back to user in weekly report
 ```
@@ -350,7 +350,7 @@ Every resume is version-controlled. User can see exactly which resume was sent t
 ### Module 6: Preparation Guide Generator (Per Job)
 
 **What it does:**
-For every job applied to, generates a structured interview preparation guide. This is the "career coach" layer — the thing that makes HireFlow more than a bot.
+For every job applied to, generates a structured interview preparation guide. This is the "career coach" layer - the thing that makes HireFlow more than a bot.
 
 **Guide Components:**
 
@@ -370,25 +370,25 @@ The agent analyzes the JD and company career page to predict the interview proce
 
 ```
 EXPECTED INTERVIEW PROCESS
-───────────────────────────
+---------------------------
 Predicted Rounds: 3
 Confidence: High (process mentioned in JD)
 
 Round 1: HR Screening (Telephonic)
-  ├── Focus: Introduction, motivation, communication
-  ├── Duration: ~15-20 min
-  └── Prep: Elevator pitch, "Why this company?", salary expectation
+  +-- Focus: Introduction, motivation, communication
+  +-- Duration: ~15-20 min
+  +-- Prep: Elevator pitch, "Why this company?", salary expectation
 
 Round 2: Technical Round
-  ├── Focus: Core concepts, problem-solving, project discussion
-  ├── Duration: ~45-60 min
-  ├── Topics: LangChain, RAG pipelines, AI Agents, Python
-  └── Prep: Be ready to explain your projects in depth
+  +-- Focus: Core concepts, problem-solving, project discussion
+  +-- Duration: ~45-60 min
+  +-- Topics: LangChain, RAG pipelines, AI Agents, Python
+  +-- Prep: Be ready to explain your projects in depth
 
 Round 3: Founder / Hiring Manager Round
-  ├── Focus: Culture fit, ownership, product thinking
-  ├── Duration: ~30 min
-  └── Prep: Company research, "What would you build?" questions
+  +-- Focus: Culture fit, ownership, product thinking
+  +-- Duration: ~30 min
+  +-- Prep: Company research, "What would you build?" questions
 ```
 
 #### 6b. Topics & Skills to Prepare
@@ -397,24 +397,24 @@ Based on JD skill extraction + user's skill gap analysis:
 
 ```
 TOPICS TO PREPARE
-─────────────────
+-----------------
 
-STRONG (You already know — revise & be ready to go deep):
-  1. Python — You have strong experience. Expect coding questions.
-  2. LangChain — Your ClaimFlow project demonstrates this. Be ready
+STRONG (You already know - revise & be ready to go deep):
+  1. Python - You have strong experience. Expect coding questions.
+  2. LangChain - Your ClaimFlow project demonstrates this. Be ready
      to explain agent orchestration and state management.
-  3. REST APIs — Your FastAPI experience covers this.
+  3. REST APIs - Your FastAPI experience covers this.
 
-MODERATE (You know basics — need deeper prep):
-  4. LLMs & Prompt Engineering — Study few-shot prompting, chain-of-thought,
+MODERATE (You know basics - need deeper prep):
+  4. LLMs & Prompt Engineering - Study few-shot prompting, chain-of-thought,
      temperature/top-p tuning. Likely a discussion topic.
-  5. AI Agents — Understand ReAct pattern, tool use, planning loops.
+  5. AI Agents - Understand ReAct pattern, tool use, planning loops.
      Your projects cover this but prepare theoretical depth.
 
-GAPS (Skills in JD that you're missing — start learning):
-  6. TypeScript — JD mentions it. At minimum, understand basics and how
+GAPS (Skills in JD that you're missing - start learning):
+  6. TypeScript - JD mentions it. At minimum, understand basics and how
      it differs from Python. Resource: TypeScript Handbook (link)
-  7. Vercel AI SDK — JD mentions it as "good to have." Quick overview
+  7. Vercel AI SDK - JD mentions it as "good to have." Quick overview
      recommended. Resource: Vercel AI SDK docs (link)
 ```
 
@@ -424,33 +424,33 @@ For each topic, the agent finds relevant learning resources:
 
 ```
 RESOURCES
-─────────
+---------
 
 LangChain & Agents:
-  📄 LangChain Documentation — https://python.langchain.com/docs/
-  🎥 "Building AI Agents with LangGraph" — DeepLearning.AI (link)
-  📝 Your own project: ClaimFlow AI — review your LangGraph code
+   LangChain Documentation - https://python.langchain.com/docs/
+   "Building AI Agents with LangGraph" - DeepLearning.AI (link)
+   Your own project: ClaimFlow AI - review your LangGraph code
 
 TypeScript (Gap):
-  📄 TypeScript Handbook — https://www.typescriptlang.org/docs/handbook/
-  🎥 "TypeScript in 1 Hour" — Fireship (YouTube)
-  💻 Practice: Convert one of your Python scripts to TypeScript
+   TypeScript Handbook - https://www.typescriptlang.org/docs/handbook/
+   "TypeScript in 1 Hour" - Fireship (YouTube)
+   Practice: Convert one of your Python scripts to TypeScript
 
 Vercel AI SDK (Gap):
-  📄 Official Docs — https://sdk.vercel.ai/docs
-  🎥 "Build AI Apps with Vercel AI SDK" — (YouTube)
+   Official Docs - https://sdk.vercel.ai/docs
+   "Build AI Apps with Vercel AI SDK" - (YouTube)
 
 Company-Specific:
-  🌐 AIBridge product — https://app.aibridge.one (explore it)
-  📰 Recent news about AIBridge — (web search result)
-  💡 Their tech blog (if available)
+   AIBridge product - https://app.aibridge.one (explore it)
+   Recent news about AIBridge - (web search result)
+   Their tech blog (if available)
 ```
 
 #### 6d. Company Intelligence
 
 ```
 COMPANY INTEL
-─────────────
+-------------
 
 Company: AIBridge
 Website: https://app.aibridge.one
@@ -460,28 +460,28 @@ Focus: Agentic AI systems, autonomous workflows
 Tech Stack (inferred): Python, TypeScript, LangChain, Vercel AI SDK
 
 Recent Activity:
-  • [Web search result: any recent funding, product launch, press]
+   [Web search result: any recent funding, product launch, press]
 
 Interview Pattern (from Glassdoor/AmbitionBox if available):
-  • [Scraped interview experiences if found]
-  • If not found: "No interview reviews found — this is a newer company.
+   [Scraped interview experiences if found]
+   If not found: "No interview reviews found - this is a newer company.
     Expect a less structured process focused on problem-solving and
     cultural fit."
 
 Key People:
-  • [Founder name from LinkedIn/website if publicly available]
+   [Founder name from LinkedIn/website if publicly available]
 
 What They Might Ask:
-  • "Build an AI agent that does X" — hands-on task likely
-  • "How would you architect a multi-agent system?" — design question
-  • "Walk us through a project where you used LangChain" — project deep dive
+   "Build an AI agent that does X" - hands-on task likely
+   "How would you architect a multi-agent system?" - design question
+   "Walk us through a project where you used LangChain" - project deep dive
 ```
 
 #### 6e. Mock Interview Questions (Generated Per JD)
 
 ```
 LIKELY INTERVIEW QUESTIONS
-──────────────────────────
+--------------------------
 
 Technical:
   1. What is an AI agent? How is it different from a chatbot?
@@ -510,15 +510,15 @@ After all N applications are submitted, generates a comprehensive weekly report 
 **Report Structure:**
 
 ```
-══════════════════════════════════════════════════════════════
+==============================================================
         HIREFLOW WEEKLY REPORT
-        Week: June 9 – June 15, 2026
+        Week: June 9 - June 15, 2026
         User: Rahul Sharma
         Quota: 10 | Applied: 9 | Failed: 1
-══════════════════════════════════════════════════════════════
+==============================================================
 
 SUMMARY
-───────
+-------
   Applications Sent: 9/10
   Average Match Score: 86%
   Top Match: AIBridge (92%)
@@ -527,57 +527,57 @@ SUMMARY
     Docker (2 JDs), PyTorch (2 JDs)
   
   Recommendation: This week, spend 3 hours learning TypeScript 
-  basics — it appeared in 3 of your top 10 JDs.
+  basics - it appeared in 3 of your top 10 JDs.
 
-──────────────────────────────────────────────────────────────
+--------------------------------------------------------------
 
-APPLICATION #1 — AIBridge
-─────────────────────────
+APPLICATION #1 - AIBridge
+-------------------------
   Role: Agentic AI Intern
   Match Score: 92%
-  Status: ✅ Applied
-  Resume Used: [📎 aibridge_agentic_ai_resume.pdf]
+  Status:  Applied
+  Resume Used: [ aibridge_agentic_ai_resume.pdf]
   
   Preparation Guide:
-    Expected Rounds: 2 (Technical → Founder)
+    Expected Rounds: 2 (Technical -> Founder)
     Key Topics: AI Agents, LangChain, Multi-Agent Systems, Python
     Skill Gaps: TypeScript, Vercel AI SDK
     Resources: [3 links]
     Mock Questions: [5 questions]
     Company Intel: Early-stage startup, agentic AI focus
     
-    ▶ [View Full Prep Guide]
+     [View Full Prep Guide]
 
-──────────────────────────────────────────────────────────────
+--------------------------------------------------------------
 
-APPLICATION #2 — Lemon Tea Studio
-─────────────────────────────────
+APPLICATION #2 - Lemon Tea Studio
+---------------------------------
   Role: Software Dev Intern (Full Stack & Gen-AI)
   Match Score: 89%
-  Status: ✅ Applied
-  Resume Used: [📎 lemontea_fullstack_genai_resume.pdf]
+  Status:  Applied
+  Resume Used: [ lemontea_fullstack_genai_resume.pdf]
   
   Preparation Guide:
-    Expected Rounds: 2 (HR → Technical)
+    Expected Rounds: 2 (HR -> Technical)
     Key Topics: React, Python/Node.js, GenAI, LLM Integration
     Skill Gaps: Angular
     Resources: [3 links]
     Mock Questions: [5 questions]
     Company Intel: Pune-based, hybrid, GenAI products
     
-    ▶ [View Full Prep Guide]
+     [View Full Prep Guide]
 
 ... (7 more applications)
 
-──────────────────────────────────────────────────────────────
+--------------------------------------------------------------
 
 CROSS-APPLICATION INSIGHTS
-──────────────────────────
+--------------------------
   Most In-Demand Skills This Week:
     1. Python (10/10 JDs)
     2. LangChain (6/10 JDs)
     3. LLMs / GenAI (8/10 JDs)
-    4. TypeScript (3/10 JDs) ← GAP
+    4. TypeScript (3/10 JDs) <- GAP
     5. React (4/10 JDs)
   
   Your Strongest Matches: AI Agent roles (avg 90%)
@@ -588,7 +588,7 @@ CROSS-APPLICATION INSIGHTS
     Priority 2: Docker fundamentals (2 JDs mention containerization)
     Priority 3: Review your LangGraph project for interview prep
 
-══════════════════════════════════════════════════════════════
+==============================================================
 ```
 
 ---
@@ -609,7 +609,7 @@ Flips the system: a company gets 100+ applications, and HireFlow shortlists the 
 **Shortlist Email to Hiring Team:**
 
 ```
-Subject: HireFlow Shortlist — Agentic AI Intern (20 of 127 applicants)
+Subject: HireFlow Shortlist - Agentic AI Intern (20 of 127 applicants)
 
 Hi [Hiring Manager],
 
@@ -618,15 +618,15 @@ HireFlow has analyzed all applications and shortlisted the
 top 20 candidates based on skill match, experience, and project relevance.
 
 Top 5 Highlights:
-  #1 Priya M. — 94% match — LangGraph, CrewAI, Python, 2 agentic projects
-  #2 Arjun K. — 91% match — LangChain, RAG, FastAPI, published on arXiv
-  #3 Sneha R. — 89% match — Multi-agent systems, TypeScript, React
-  #4 Rohan D. — 87% match — AI Agents, Python, Docker, MLflow
-  #5 Ananya S. — 86% match — LLMs, Prompt Engineering, Streamlit
+  #1 Priya M. - 94% match - LangGraph, CrewAI, Python, 2 agentic projects
+  #2 Arjun K. - 91% match - LangChain, RAG, FastAPI, published on arXiv
+  #3 Sneha R. - 89% match - Multi-agent systems, TypeScript, React
+  #4 Rohan D. - 87% match - AI Agents, Python, Docker, MLflow
+  #5 Ananya S. - 86% match - LLMs, Prompt Engineering, Streamlit
 
 Full shortlist with individual profiles attached.
 
-— HireFlow AI
+- HireFlow AI
 ```
 
 ---
@@ -656,13 +656,13 @@ Full shortlist with individual profiles attached.
 
 | Sprint | Milestone | Key Deliverables | Owner |
 |--------|-----------|-----------------|-------|
-| **M1** | **Project Scaffold & User Onboarding** | Repo structure, `.env`, `requirements.txt`, DB schema, user profile model, profile intake API (upload resume → extract skills via LLM), weekly quota setting | Maintainer + C1 |
+| **M1** | **Project Scaffold & User Onboarding** | Repo structure, `.env`, `requirements.txt`, DB schema, user profile model, profile intake API (upload resume -> extract skills via LLM), weekly quota setting | Maintainer + C1 |
 | **M2** | **Job Discovery Engine** | Playwright scrapers for 3 career page formats (Lever, Greenhouse, custom). BeautifulSoup for static pages. Spam classifier (TF-IDF baseline). Job data model. Scheduled scraping | C1 |
-| **M3** | **Job-Profile Match Scorer** | Embedding pipeline (JD + Profile → vectors). FAISS index. Multi-factor scoring (skill match 40%, role fit 20%, experience 15%, location 10%, salary 10%, company signal 5%). Skill gap extraction | C2 |
-| **M4** | **Weekly Quota Selector + Resume Tailoring Engine** | Top-N selection logic. Resume tailoring RAG pipeline (master profile + JD → tailored resume). LaTeX PDF generation. Resume versioning and storage. Resume sent back with application record | C2 + C3 |
+| **M3** | **Job-Profile Match Scorer** | Embedding pipeline (JD + Profile -> vectors). FAISS index. Multi-factor scoring (skill match 40%, role fit 20%, experience 15%, location 10%, salary 10%, company signal 5%). Skill gap extraction | C2 |
+| **M4** | **Weekly Quota Selector + Resume Tailoring Engine** | Top-N selection logic. Resume tailoring RAG pipeline (master profile + JD -> tailored resume). LaTeX PDF generation. Resume versioning and storage. Resume sent back with application record | C2 + C3 |
 | **M5** | **Application Automation Agent** | Playwright form filler for career pages. Multi-step flow handling. Rate limiting. CAPTCHA detection (flag, don't solve). Error recovery. Retry logic. Application status logging | C3 |
-| **M6** | **Preparation Guide Generator** | JD analysis → interview rounds prediction. Topic/skill extraction with gap analysis. Resource finder (web search for tutorials, docs, courses). Mock question generator. Company intel scraper. Per-job prep guide PDF/HTML generation | C4 |
-| **M7** | **Weekly Report + Hiring Side Module** | Weekly report generator (all applications + resumes + prep guides). Email delivery. Hiring side: bulk application parser → scorer → shortlist → email to hiring team | C4 + Maintainer |
+| **M6** | **Preparation Guide Generator** | JD analysis -> interview rounds prediction. Topic/skill extraction with gap analysis. Resource finder (web search for tutorials, docs, courses). Mock question generator. Company intel scraper. Per-job prep guide PDF/HTML generation | C4 |
+| **M7** | **Weekly Report + Hiring Side Module** | Weekly report generator (all applications + resumes + prep guides). Email delivery. Hiring side: bulk application parser -> scorer -> shortlist -> email to hiring team | C4 + Maintainer |
 | **M8** | **Dashboard, Integration & Demo** | React dashboard (weekly plan view, application tracker, prep guides, resume viewer). End-to-end flow testing. Edge cases. Demo video. README. Architecture docs | All |
 
 ---
@@ -673,9 +673,9 @@ Full shortlist with individual profiles attached.
 **Owns:** Repo architecture, LangGraph orchestration, state management, PR reviews, integration across all modules, M1 scaffold, M7 hiring side co-owner, M8 integration
 
 **Key Files:**
-- `src/agents/supervisor.py` — Main LangGraph workflow
-- `src/config/` — All configuration
-- `src/models/` — Data models (User, Job, Application, PrepGuide)
+- `src/agents/supervisor.py` - Main LangGraph workflow
+- `src/config/` - All configuration
+- `src/models/` - Data models (User, Job, Application, PrepGuide)
 
 **Defense Questions:**
 1. Walk me through the complete data flow from "user sets quota = 10" to "weekly report delivered."
@@ -684,7 +684,7 @@ Full shortlist with individual profiles attached.
 
 ---
 
-### Contributor 1 — Job Discovery Engine
+### Contributor 1 - Job Discovery Engine
 **Owns:** M2 (Job Discovery + Spam Filter)
 
 **Key Files:**
@@ -702,7 +702,7 @@ Full shortlist with individual profiles attached.
 
 ---
 
-### Contributor 2 — Match Scorer + Resume Tailoring
+### Contributor 2 - Match Scorer + Resume Tailoring
 **Owns:** M3 (Match Scorer) + M4 co-owner (Resume Engine)
 
 **Key Files:**
@@ -722,7 +722,7 @@ Full shortlist with individual profiles attached.
 
 ---
 
-### Contributor 3 — Application Automation Agent
+### Contributor 3 - Application Automation Agent
 **Owns:** M5 (Application Automation) + M4 co-owner (Resume integration)
 
 **Key Files:**
@@ -741,7 +741,7 @@ Full shortlist with individual profiles attached.
 
 ---
 
-### Contributor 4 — Prep Guide Generator + Weekly Report
+### Contributor 4 - Prep Guide Generator + Weekly Report
 **Owns:** M6 (Prep Guide) + M7 co-owner (Weekly Report + Hiring Side)
 
 **Key Files:**
@@ -864,15 +864,15 @@ CREATE TABLE shortlists (
 ## Sample User Journey (End-to-End)
 
 ```
-Day 1: Rahul signs up → uploads resume → sets quota = 10 → targets "AI Engineer Intern"
+Day 1: Rahul signs up -> uploads resume -> sets quota = 10 -> targets "AI Engineer Intern"
 
-Day 2: HireFlow scrapes 150 jobs → filters 23 spam → scores 127 remaining
-        → sends Weekly Plan: "Here are your top 10. Confirm?"
-        Rahul reviews → swaps #8 with #11 → confirms
+Day 2: HireFlow scrapes 150 jobs -> filters 23 spam -> scores 127 remaining
+        -> sends Weekly Plan: "Here are your top 10. Confirm?"
+        Rahul reviews -> swaps #8 with #11 -> confirms
 
-Day 2-3: HireFlow generates 10 tailored resumes → applies to 9 
+Day 2-3: HireFlow generates 10 tailored resumes -> applies to 9 
          (1 failed: Augle AI had CAPTCHA)
-         → generates 10 prep guides
+         -> generates 10 prep guides
 
 Day 3: Rahul receives Weekly Report:
        - 9 applications with resumes attached
@@ -881,7 +881,7 @@ Day 3: Rahul receives Weekly Report:
        - Augle AI flagged: "Manual apply needed (CAPTCHA)"
 
 Day 4-7: Rahul studies using prep guides. Gets interview call from AIBridge.
-         Opens prep guide → reviews predicted rounds, topics, mock questions.
+         Opens prep guide -> reviews predicted rounds, topics, mock questions.
          Aces the interview.
 
 Day 8: Next weekly cycle begins automatically.
@@ -890,5 +890,5 @@ Day 8: Next weekly cycle begins automatically.
 ---
 
 *Document Version: 3.0 | Project 1 of 5 | AI Track*
-*Summer Profile Building Drive 2026 — Newton School of Technology*
-*Framework: Build → Understand → Defend*
+*Summer Profile Building Drive 2026 - Newton School of Technology*
+*Framework: Build -> Understand -> Defend*

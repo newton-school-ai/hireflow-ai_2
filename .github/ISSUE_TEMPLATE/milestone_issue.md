@@ -7,13 +7,13 @@ assignees: ''
 ---
 
 ## Milestone
-<!-- Which milestone does this belong to? e.g., M2 — Job Discovery Engine -->
+<!-- Which milestone does this belong to? e.g., M2 - Job Discovery Engine -->
 
 ## What needs to be built
 <!-- Clear description of the feature / module / function to implement -->
 
 ## Acceptance Criteria
-<!-- Checklist — PR will only be merged when ALL of these are checked off -->
+<!-- Checklist - PR will only be merged when ALL of these are checked off -->
 - [ ] 
 - [ ] 
 - [ ] 

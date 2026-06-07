@@ -1,12 +1,12 @@
 ## What does this PR do?
-<!-- One paragraph summary — what was built or fixed -->
+<!-- One paragraph summary - what was built or fixed -->
 
 ## Related Issue
 <!-- Link the issue this PR closes -->
 Closes #
 
 ## Milestone
-<!-- Which milestone does this belong to? e.g., M2 — Job Discovery Engine -->
+<!-- Which milestone does this belong to? e.g., M2 - Job Discovery Engine -->
 
 ## Changes Made
 <!-- List the key files created or changed -->

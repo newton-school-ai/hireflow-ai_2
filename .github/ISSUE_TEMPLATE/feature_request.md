@@ -15,7 +15,7 @@ assignees: ''
 <!-- How would you implement it? -->
 
 ## Milestone / Module it belongs to
-<!-- e.g., M3 — Match Scorer -->
+<!-- e.g., M3 - Match Scorer -->
 
 ## Acceptance Criteria
 - [ ] 

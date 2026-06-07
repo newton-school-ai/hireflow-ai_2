@@ -4,7 +4,7 @@ Copy everything below the line and paste into Claude Cowork.
 
 ---
 
-I want you to scaffold a new open-source project called **HireFlow AI** — an agentic job application and hiring assistant. This is a student team project for Newton School of Technology's Summer Profile Building Drive 2026. A pod of 5 students (1 Maintainer + 4 Contributors) will build it over 8 milestones using a GitHub-based workflow.
+I want you to scaffold a new open-source project called **HireFlow AI** - an agentic job application and hiring assistant. This is a student team project for Newton School of Technology's Summer Profile Building Drive 2026. A pod of 5 students (1 Maintainer + 4 Contributors) will build it over 8 milestones using a GitHub-based workflow.
 
 ## Step 1: Create the Local Project Folder
 
@@ -12,74 +12,74 @@ Create a folder `hireflow-ai/` in my projects directory with this exact structur
 
 ```
 hireflow-ai/
-├── .github/
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── milestone-task.md
-│   │   ├── bug-report.md
-│   │   └── feature-request.md
-│   ├── PULL_REQUEST_TEMPLATE.md
-│   └── workflows/
-│       └── ci.yml
-├── src/
-│   ├── agents/
-│   │   ├── __init__.py
-│   │   ├── supervisor.py
-│   │   ├── application_agent.py
-│   │   ├── prep_guide_agent.py
-│   │   ├── spam_filter.py
-│   │   ├── company_intel_agent.py
-│   │   └── hiring_shortlist_agent.py
-│   ├── scrapers/
-│   │   ├── __init__.py
-│   │   ├── lever_scraper.py
-│   │   ├── greenhouse_scraper.py
-│   │   └── generic_scraper.py
-│   ├── pipelines/
-│   │   ├── __init__.py
-│   │   ├── match_scorer.py
-│   │   ├── embedding_pipeline.py
-│   │   └── resume_generator.py
-│   ├── automation/
-│   │   ├── __init__.py
-│   │   ├── form_filler.py
-│   │   └── captcha_handler.py
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── main.py
-│   │   └── routes/
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── user.py
-│   │   ├── job.py
-│   │   ├── application.py
-│   │   └── prep_guide.py
-│   ├── templates/
-│   │   └── resume_latex/
-│   ├── utils/
-│   │   └── __init__.py
-│   └── config/
-│       └── __init__.py
-├── tests/
-│   ├── __init__.py
-│   └── README.md
-├── notebooks/
-│   └── README.md
-├── data/
-│   └── README.md
-├── docs/
-│   ├── architecture.md
-│   ├── setup.md
-│   └── milestone-reports/
-├── frontend/
-│   └── README.md
-├── .env.example
-├── .gitignore
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-├── README.md
-├── LICENSE
-└── CONTRIBUTING.md
++-- .github/
+|   +-- ISSUE_TEMPLATE/
+|   |   +-- milestone-task.md
+|   |   +-- bug-report.md
+|   |   +-- feature-request.md
+|   +-- PULL_REQUEST_TEMPLATE.md
+|   +-- workflows/
+|       +-- ci.yml
++-- src/
+|   +-- agents/
+|   |   +-- __init__.py
+|   |   +-- supervisor.py
+|   |   +-- application_agent.py
+|   |   +-- prep_guide_agent.py
+|   |   +-- spam_filter.py
+|   |   +-- company_intel_agent.py
+|   |   +-- hiring_shortlist_agent.py
+|   +-- scrapers/
+|   |   +-- __init__.py
+|   |   +-- lever_scraper.py
+|   |   +-- greenhouse_scraper.py
+|   |   +-- generic_scraper.py
+|   +-- pipelines/
+|   |   +-- __init__.py
+|   |   +-- match_scorer.py
+|   |   +-- embedding_pipeline.py
+|   |   +-- resume_generator.py
+|   +-- automation/
+|   |   +-- __init__.py
+|   |   +-- form_filler.py
+|   |   +-- captcha_handler.py
+|   +-- api/
+|   |   +-- __init__.py
+|   |   +-- main.py
+|   |   +-- routes/
+|   +-- models/
+|   |   +-- __init__.py
+|   |   +-- user.py
+|   |   +-- job.py
+|   |   +-- application.py
+|   |   +-- prep_guide.py
+|   +-- templates/
+|   |   +-- resume_latex/
+|   +-- utils/
+|   |   +-- __init__.py
+|   +-- config/
+|       +-- __init__.py
++-- tests/
+|   +-- __init__.py
+|   +-- README.md
++-- notebooks/
+|   +-- README.md
++-- data/
+|   +-- README.md
++-- docs/
+|   +-- architecture.md
+|   +-- setup.md
+|   +-- milestone-reports/
++-- frontend/
+|   +-- README.md
++-- .env.example
++-- .gitignore
++-- requirements.txt
++-- Dockerfile
++-- docker-compose.yml
++-- README.md
++-- LICENSE
++-- CONTRIBUTING.md
 ```
 
 ## Step 2: Populate the Key Files
@@ -88,11 +88,11 @@ hireflow-ai/
 
 Create a polished README with:
 - Project title: **HireFlow AI**
-- Tagline: "Your AI-powered career autopilot — discover jobs, tailor resumes, apply automatically, and get a custom prep guide for every application."
+- Tagline: "Your AI-powered career autopilot - discover jobs, tailor resumes, apply automatically, and get a custom prep guide for every application."
 - Badges (placeholder): Python version, License, Build status, Contributors
 - Overview section explaining the dual-purpose system (candidate side + hiring side)
 - Features section listing: Job Discovery, Smart Match Scoring, Weekly Quota System, ATS Resume Tailoring, Application Automation, Preparation Guide Generator, Weekly Reports, Hiring Side Shortlister
-- Architecture diagram (placeholder — note "see docs/architecture.md")
+- Architecture diagram (placeholder - note "see docs/architecture.md")
 - Tech Stack table (LangGraph, Claude/OpenAI, Playwright, FAISS, FastAPI, React, PostgreSQL, LaTeX)
 - Getting Started: clone, venv, requirements, .env setup
 - Project Structure overview
@@ -193,13 +193,13 @@ labels: milestone, task
 ---
 
 ## Milestone
-M_ — [Milestone Name]
+M_ - [Milestone Name]
 
 ## Task Title
 [Short, action-oriented title]
 
 ## Objective
-[What this task delivers — 1-2 sentences]
+[What this task delivers - 1-2 sentences]
 
 ## Acceptance Criteria
 - [ ] [Criterion 1]
@@ -232,7 +232,7 @@ Closes #[issue-number]
 [Brief description of the change]
 
 ## Milestone
-M_ — [Milestone Name]
+M_ - [Milestone Name]
 
 ## Changes
 - [Change 1]
@@ -263,7 +263,7 @@ Answer the Defense Questions from the linked issue:
 
 A placeholder file with section headers:
 - System Overview
-- Data Flow (User → Job Discovery → Match Scoring → Quota Selection → Resume Tailoring → Application → Prep Guide → Weekly Report)
+- Data Flow (User -> Job Discovery -> Match Scoring -> Quota Selection -> Resume Tailoring -> Application -> Prep Guide -> Weekly Report)
 - Agent Architecture (LangGraph supervisor + sub-agents)
 - Database Schema
 - Tech Stack Rationale
@@ -287,8 +287,8 @@ git branch -M main
 
 Create a new public repository on GitHub:
 - Name: `hireflow-ai`
-- Owner: [my GitHub org or username — ask me which]
-- Description: "Your AI-powered career autopilot — agentic job application + preparation system. Built by Newton School of Technology students."
+- Owner: [my GitHub org or username - ask me which]
+- Description: "Your AI-powered career autopilot - agentic job application + preparation system. Built by Newton School of Technology students."
 - Public, with no auto-generated files (since we have our own)
 
 Then push:
@@ -300,15 +300,15 @@ git push -u origin main
 ## Step 5: Create GitHub Labels
 
 Create these labels for the workflow:
-- `milestone` (blue) — milestone tasks
-- `m1` through `m8` (purple) — milestone number
+- `milestone` (blue) - milestone tasks
+- `m1` through `m8` (purple) - milestone number
 - `bug` (red)
 - `feature` (green)
 - `documentation` (gray)
-- `agent` (orange) — agent-related work
-- `scraper` (yellow) — scraping work
-- `frontend` (cyan) — frontend work
-- `infra` (brown) — infrastructure work
+- `agent` (orange) - agent-related work
+- `scraper` (yellow) - scraping work
+- `frontend` (cyan) - frontend work
+- `infra` (brown) - infrastructure work
 - `good first issue` (light green)
 - `needs-review` (pink)
 
@@ -316,7 +316,7 @@ Create these labels for the workflow:
 
 Create one issue per milestone. Use the `milestone-task` template. Title format: `[M1]: Project Scaffold & User Onboarding`. Here are the 8 issues to create:
 
-**Issue #1 — [M1]: Project Scaffold & User Onboarding**
+**Issue #1 - [M1]: Project Scaffold & User Onboarding**
 - Labels: `milestone`, `m1`, `infra`
 - Objective: Set up the repo structure, database schema, user profile model, and onboarding API
 - Acceptance Criteria:
@@ -332,7 +332,7 @@ Create one issue per milestone. Use the `milestone-task` template. Title format:
   - What happens when a user updates their profile mid-week?
 - Assigned: Maintainer + Contributor 1
 
-**Issue #2 — [M2]: Job Discovery Engine + Spam Filter**
+**Issue #2 - [M2]: Job Discovery Engine + Spam Filter**
 - Labels: `milestone`, `m2`, `scraper`, `agent`
 - Objective: Build scrapers for 3 career page formats and an NLP-based spam classifier
 - Acceptance Criteria:
@@ -345,15 +345,15 @@ Create one issue per milestone. Use the `milestone-task` template. Title format:
 - Defense Questions:
   - Why Playwright over Selenium?
   - How do you handle career pages with infinite scroll?
-  - Your spam classifier flags a real startup with a sparse JD — how do you reduce false positives?
+  - Your spam classifier flags a real startup with a sparse JD - how do you reduce false positives?
   - What's your scraping rate limit strategy?
 - Assigned: Contributor 1
 
-**Issue #3 — [M3]: Job-Profile Match Scorer**
+**Issue #3 - [M3]: Job-Profile Match Scorer**
 - Labels: `milestone`, `m3`, `pipeline`
 - Objective: Build the embedding-based matching and multi-factor scoring system
 - Acceptance Criteria:
-  - Embedding pipeline (JD + profile → vectors)
+  - Embedding pipeline (JD + profile -> vectors)
   - FAISS index for similarity search
   - Multi-factor scoring (skill 40%, role 20%, experience 15%, location 10%, salary 10%, company 5%)
   - Skill gap extraction (matched, partial, missing)
@@ -362,16 +362,16 @@ Create one issue per milestone. Use the `milestone-task` template. Title format:
   - What embedding model did you use? Why? How did you evaluate retrieval quality?
   - Why FAISS over ChromaDB?
   - How did you decide the scoring weights?
-  - Two jobs have the same match score — how does the system break the tie?
+  - Two jobs have the same match score - how does the system break the tie?
 - Assigned: Contributor 2
 
-**Issue #4 — [M4]: Weekly Quota Selector + Resume Tailoring Engine**
+**Issue #4 - [M4]: Weekly Quota Selector + Resume Tailoring Engine**
 - Labels: `milestone`, `m4`, `agent`, `pipeline`
 - Objective: Build the top-N selector and per-job resume tailoring with LaTeX PDF output
 - Acceptance Criteria:
   - Top-N selector based on user's weekly quota
   - Weekly Application Plan generator with user confirmation flow
-  - Resume tailoring RAG pipeline (master profile + JD → tailored resume content)
+  - Resume tailoring RAG pipeline (master profile + JD -> tailored resume content)
   - LaTeX templates for ATS-optimized resumes
   - PDF generation via XeLaTeX
   - Resume versioning and storage at `/data/resumes/{user_id}/{job_id}_resume.pdf`
@@ -383,7 +383,7 @@ Create one issue per milestone. Use the `milestone-task` template. Title format:
   - Why LaTeX for resume generation?
 - Assigned: Contributor 2 + Contributor 3
 
-**Issue #5 — [M5]: Application Automation Agent**
+**Issue #5 - [M5]: Application Automation Agent**
 - Labels: `milestone`, `m5`, `agent`, `automation`
 - Objective: Build the Playwright-driven form filling and submission agent
 - Acceptance Criteria:
@@ -396,16 +396,16 @@ Create one issue per milestone. Use the `milestone-task` template. Title format:
   - File upload handling for resume PDF
 - Defense Questions:
   - How do you handle multi-page application forms? What if page 3 fails?
-  - The career page has a CAPTCHA — what does your agent do?
+  - The career page has a CAPTCHA - what does your agent do?
   - How do you avoid being detected as a bot?
-  - A form asks "Why do you want to work here?" — how does your agent answer?
+  - A form asks "Why do you want to work here?" - how does your agent answer?
 - Assigned: Contributor 3
 
-**Issue #6 — [M6]: Preparation Guide Generator**
+**Issue #6 - [M6]: Preparation Guide Generator**
 - Labels: `milestone`, `m6`, `agent`
 - Objective: Generate a comprehensive prep guide per job application
 - Acceptance Criteria:
-  - JD analysis → predicted interview rounds with round-wise focus
+  - JD analysis -> predicted interview rounds with round-wise focus
   - Topic categorization (Strong / Moderate / Gaps) based on user profile
   - Resource finder via web search (Tavily) for each topic
   - Mock interview question generator (JD-specific, not generic)
@@ -415,24 +415,24 @@ Create one issue per milestone. Use the `milestone-task` template. Title format:
   - How do you predict the number of interview rounds when JD doesn't mention it?
   - How do you ensure resource links are valid and high-quality?
   - How do you generate mock questions specific to the JD, not generic?
-  - The company has zero Glassdoor reviews — how does intel module handle this?
+  - The company has zero Glassdoor reviews - how does intel module handle this?
 - Assigned: Contributor 4
 
-**Issue #7 — [M7]: Weekly Report Generator + Hiring Side Module**
+**Issue #7 - [M7]: Weekly Report Generator + Hiring Side Module**
 - Labels: `milestone`, `m7`, `agent`
 - Objective: Bundle all applications, resumes, and prep guides into a weekly report. Also build the hiring side shortlister.
 - Acceptance Criteria:
   - Weekly report generator (PDF/HTML) with all applications + resumes + prep guides + cross-application insights
   - Email delivery via SendGrid
   - Cross-application skill gap analysis ("TypeScript appears in 3 JDs")
-  - Hiring side: bulk application parser → scorer → top-N shortlist → summary email to hiring team
+  - Hiring side: bulk application parser -> scorer -> top-N shortlist -> summary email to hiring team
 - Defense Questions:
-  - The weekly report has 10 prep guides — how do you keep them distinct?
+  - The weekly report has 10 prep guides - how do you keep them distinct?
   - How do you prioritize which skill gap to study first?
   - For hiring side: how do you prevent bias in shortlisting?
 - Assigned: Contributor 4 + Maintainer
 
-**Issue #8 — [M8]: React Dashboard + Integration + Demo**
+**Issue #8 - [M8]: React Dashboard + Integration + Demo**
 - Labels: `milestone`, `m8`, `frontend`
 - Objective: Build the user-facing dashboard and complete end-to-end integration
 - Acceptance Criteria:
