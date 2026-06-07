@@ -71,3 +71,7 @@ logs/
 # Playwright
 playwright-report/
 test-results/
+
+# Internal planning files - not for contributors
+cowork-hireflow-prompt.md
+hireflow-ai-blueprint*
