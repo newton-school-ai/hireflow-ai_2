@@ -1,0 +1,19 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - "frontend/**"
+
+jobs:
+  frontend-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Frontend Structure
+        run: |
+          test -d frontend
