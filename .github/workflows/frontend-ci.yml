@@ -1,0 +1,140 @@
+# =============================================================================
+# HireFlow AI — Frontend CI Pipeline
+# =============================================================================
+# This workflow runs the frontend test suite and verifies the production build
+# on every pull request targeting the 'dev' branch. It ensures broken frontend
+# code is never merged.
+#
+# Trigger:    Pull requests → dev (only when frontend files change)
+# Runtime:    Ubuntu latest + Node 20
+# Steps:      Checkout → Node setup → Cache npm → npm ci → test → build
+# =============================================================================
+
+name: Frontend CI
+
+# ---------------------------------------------------------------------------
+# Trigger Configuration
+# ---------------------------------------------------------------------------
+# Same pattern as backend-ci.yml — fires on PRs targeting dev only.
+#
+# 'paths' restricts this to frontend-only changes. A backend-only PR
+# should not waste CI minutes running npm commands.
+#
+# The workflow file itself is included in paths so that changes to the CI
+# definition are tested by the CI they modify (self-testing).
+# ---------------------------------------------------------------------------
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+
+# ---------------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------------
+# Two logical phases — test and build — combined into one job because:
+# 1. They share the same checkout + install steps (no point duplicating).
+# 2. The build step is fast enough that splitting into separate jobs would
+#    add more overhead (VM spin-up) than it saves.
+# 3. We still get clear step-level visibility in the Actions UI.
+# ---------------------------------------------------------------------------
+jobs:
+  test-and-build:
+    # -----------------------------------------------------------------------
+    # Runner
+    # -----------------------------------------------------------------------
+    # ubuntu-latest provides a clean environment with Node.js tooling
+    # pre-available. Same reasoning as the backend workflow.
+    # -----------------------------------------------------------------------
+    runs-on: ubuntu-latest
+
+    name: Frontend Tests & Build (Node 20)
+
+    # -----------------------------------------------------------------------
+    # Working Directory Default
+    # -----------------------------------------------------------------------
+    # All 'run' steps execute inside frontend/ by default. This avoids
+    # repeating 'cd frontend' in every step and matches how a developer
+    # would work locally: cd into frontend, then run npm commands.
+    # -----------------------------------------------------------------------
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      # ---------------------------------------------------------------------
+      # Step 1: Checkout Repository
+      # ---------------------------------------------------------------------
+      # Must checkout the full repo (not just frontend/) because
+      # actions/checkout operates at the repo root. The working-directory
+      # default above handles scoping subsequent commands to frontend/.
+      # ---------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------------
+      # Step 2: Set Up Node.js
+      # ---------------------------------------------------------------------
+      # actions/setup-node installs the specified Node.js version and
+      # configures npm. We use Node 20 (current LTS) as specified in the
+      # issue requirements.
+      #
+      # 'cache: npm' tells the action to cache the npm global cache
+      # directory (~/.npm) automatically, keyed by the hash of
+      # frontend/package-lock.json. This eliminates the need for a
+      # separate actions/cache step — the setup-node action handles it.
+      #
+      # 'cache-dependency-path' points to the lockfile inside the frontend
+      # subdirectory (not the repo root) since that's where our Node
+      # project lives.
+      # ---------------------------------------------------------------------
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      # ---------------------------------------------------------------------
+      # Step 3: Install Dependencies (npm ci)
+      # ---------------------------------------------------------------------
+      # 'npm ci' (Clean Install) is used instead of 'npm install' because:
+      # 1. It installs exact versions from package-lock.json (reproducible)
+      # 2. It fails if package-lock.json is out of sync with package.json
+      # 3. It's faster — skips the dependency resolution step entirely
+      # 4. It deletes node_modules/ first, ensuring a clean state
+      #
+      # In CI, reproducibility > convenience. npm install can silently
+      # update the lockfile, which defeats the purpose of locking versions.
+      # ---------------------------------------------------------------------
+      - name: Install dependencies
+        run: npm ci
+
+      # ---------------------------------------------------------------------
+      # Step 4: Run Tests
+      # ---------------------------------------------------------------------
+      # 'npm run test' executes the test script defined in package.json,
+      # which runs 'vitest run' (Vitest in single-run mode, not watch mode).
+      #
+      # Vitest exits with code 0 on success, non-zero on failure. GitHub
+      # Actions fails the step on any non-zero exit — no extra config needed.
+      # ---------------------------------------------------------------------
+      - name: Run tests
+        run: npm run test
+
+      # ---------------------------------------------------------------------
+      # Step 5: Build Verification
+      # ---------------------------------------------------------------------
+      # 'npm run build' runs 'vite build' to produce the production bundle.
+      # This step catches:
+      # - TypeScript/syntax errors that tests might miss
+      # - Broken imports (tree-shaking reveals dead references)
+      # - Asset pipeline issues (missing images, broken CSS imports)
+      #
+      # We don't deploy the build output — this is purely a "does it
+      # compile?" gate. The build artifacts are discarded after the job.
+      # ---------------------------------------------------------------------
+      - name: Build production bundle
+        run: npm run build
