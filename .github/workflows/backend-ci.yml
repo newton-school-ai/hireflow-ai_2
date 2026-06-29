@@ -5,15 +5,12 @@ on:
     branches:
       - dev
     paths:
-      - "backend/**"
+      - "**/*.py"
       - ".github/workflows/backend-ci.yml"
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
 
     steps:
       - name: Checkout repository
