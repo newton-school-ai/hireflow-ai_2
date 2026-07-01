@@ -1,0 +1,118 @@
+# =============================================================================
+# HireFlow AI — Backend CI Pipeline
+# =============================================================================
+# This workflow runs the Python/FastAPI test suite on every pull request
+# targeting the 'dev' branch. It ensures broken backend code is never merged.
+#
+# Trigger:    Pull requests → dev (only when backend-relevant files change)
+# Runtime:    Ubuntu latest + Python 3.11
+# Steps:      Checkout → Python setup → Cache pip → Install deps → pytest
+# =============================================================================
+
+name: Backend CI
+
+# ---------------------------------------------------------------------------
+# Trigger Configuration
+# ---------------------------------------------------------------------------
+# 'on.pull_request' fires when a PR is opened, synchronized (new commits
+# pushed), or reopened against the specified base branch.
+#
+# 'branches' restricts this to PRs targeting 'dev' only — PRs to main,
+# feature branches, etc. are ignored. This matches the branch strategy
+# documented in CONTRIBUTING.md: all features merge into dev first.
+#
+# 'paths' ensures this workflow only runs when backend-relevant files change.
+# A docs-only PR should not waste CI minutes running pytest.
+# ---------------------------------------------------------------------------
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/backend-ci.yml"
+
+# ---------------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------------
+# A workflow contains one or more jobs. Each job runs on a fresh VM.
+# We define a single 'test' job here — no build/deploy needed for CI.
+# ---------------------------------------------------------------------------
+jobs:
+  test:
+    # -----------------------------------------------------------------------
+    # Runner
+    # -----------------------------------------------------------------------
+    # 'runs-on' selects the GitHub-hosted VM image. ubuntu-latest gives us
+    # a clean Linux environment with common build tools pre-installed.
+    # This is the standard choice for Python CI — it's fast, free for public
+    # repos, and matches our production Docker base (Debian-based).
+    # -----------------------------------------------------------------------
+    runs-on: ubuntu-latest
+
+    # -----------------------------------------------------------------------
+    # Job name displayed in the GitHub Actions UI and PR status checks.
+    # A clear name helps reviewers quickly identify what failed.
+    # -----------------------------------------------------------------------
+    name: Python Tests (3.11)
+
+    steps:
+      # ---------------------------------------------------------------------
+      # Step 1: Checkout Repository
+      # ---------------------------------------------------------------------
+      # actions/checkout clones the repository at the PR's merge commit so
+      # tests run against the proposed changes, not the base branch alone.
+      # v4 is the latest major version (Node 20 runtime, performance fixes).
+      # ---------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------------
+      # Step 2: Set Up Python
+      # ---------------------------------------------------------------------
+      # actions/setup-python installs and configures the specified Python
+      # version on the runner. We pin to 3.11 to match our Dockerfile and
+      # the version documented in DEVELOPMENT_GUIDE.md.
+      #
+      # 'cache: pip' enables built-in pip caching, keyed by the hash of
+      # requirements.txt. This eliminates the need for a separate
+      # actions/cache step — same pattern as setup-node with 'cache: npm'
+      # in the frontend workflow.
+      # ---------------------------------------------------------------------
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # ---------------------------------------------------------------------
+      # Step 4: Install Dependencies
+      # ---------------------------------------------------------------------
+      # pip install with --no-cache-dir is NOT used here (we want the cache
+      # from Step 3). We upgrade pip first to avoid compatibility warnings.
+      #
+      # All dependencies including pytest, pytest-asyncio, and httpx are
+      # declared in requirements.txt — no separate test-requirements file
+      # is needed since the project bundles test deps with main deps.
+      # ---------------------------------------------------------------------
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ---------------------------------------------------------------------
+      # Step 5: Run Tests
+      # ---------------------------------------------------------------------
+      # pytest tests/ -v runs all test files under the tests/ directory.
+      #   -v (verbose) prints each test name and result for easier debugging
+      #   in CI logs.
+      #
+      # pytest exits with code 0 on success and non-zero on failure, which
+      # GitHub Actions interprets correctly — a non-zero exit fails the step
+      # and marks the entire job as failed. No additional failure handling
+      # is needed.
+      # ---------------------------------------------------------------------
+      - name: Run pytest
+        run: pytest tests/ -v
