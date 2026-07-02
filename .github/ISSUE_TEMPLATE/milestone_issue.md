@@ -14,9 +14,9 @@ assignees: ''
 
 ## Acceptance Criteria
 <!-- Checklist - PR will only be merged when ALL of these are checked off -->
-- [ ] 
-- [ ] 
-- [ ] 
+- [ ]
+- [ ]
+- [ ]
 
 ## Files expected
 <!-- Which files should be created or modified? -->
@@ -24,9 +24,9 @@ assignees: ''
 
 ## Defense Questions
 <!-- Questions the contributor must be able to answer in the milestone Q&A -->
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Notes / References
 <!-- Any helpful context, links to docs, blueprint sections -->
