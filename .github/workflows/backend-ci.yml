@@ -103,7 +103,19 @@ jobs:
           pip install -r requirements.txt
 
       # ---------------------------------------------------------------------
-      # Step 5: Run Tests
+      # Step 5: Run Linting Checks
+      # ---------------------------------------------------------------------
+      # Run black and ruff check on the src/ and tests/ directories.
+      # This ensures code style and quality conform to formatting requirements.
+      # ---------------------------------------------------------------------
+      - name: Run black check
+        run: black --check src/ tests/
+
+      - name: Run ruff check
+        run: ruff check src/ tests/
+
+      # ---------------------------------------------------------------------
+      # Step 6: Run Tests
       # ---------------------------------------------------------------------
       # pytest tests/ -v runs all test files under the tests/ directory.
       #   -v (verbose) prints each test name and result for easier debugging
