@@ -103,6 +103,16 @@ jobs:
           pip install -r requirements.txt
 
       # ---------------------------------------------------------------------
+      # Step 4.5: Install Playwright Chromium Browser
+      # ---------------------------------------------------------------------
+      # Scrapers built in Milestone 2 require Playwright Chromium.
+      # This step installs the chromium browser binary on the runner.
+      # ---------------------------------------------------------------------
+      - name: Install Playwright Chromium
+        run: playwright install chromium
+
+
+      # ---------------------------------------------------------------------
       # Step 5: Run Linting Checks
       # ---------------------------------------------------------------------
       # Run black and ruff check on the src/ and tests/ directories.
