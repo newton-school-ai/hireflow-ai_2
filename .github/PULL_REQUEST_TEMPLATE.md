@@ -55,4 +55,10 @@ alembic upgrade head
 - [x] I updated `requirements.txt` if I added new packages
 
 ## Screenshots / Output (if applicable)
-<!-- Paste sample output, test results, or screenshots -->
+![alt text](<Screenshot 2026-07-03 at 11.20.45 AM.png>)
+![alt text](<Screenshot 2026-07-03 at 11.21.08 AM.png>)
+![alt text](<Screenshot 2026-07-03 at 11.21.28 AM.png>)
+![alt text](<Screenshot 2026-07-03 at 11.22.00 AM.png>)
+![alt text](<Screenshot 2026-07-03 at 11.22.17 AM.png>)
+![alt text](<Screenshot 2026-07-03 at 11.22.46 AM.png>)
+![alt text](<Screenshot 2026-07-03 at 11.22.56 AM.png>)
