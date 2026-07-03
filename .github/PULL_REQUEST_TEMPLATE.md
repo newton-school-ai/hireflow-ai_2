@@ -27,9 +27,9 @@ M1 - Project Scaffold and User Onboarding
 - [x] Manually tested with:
 
 ```bash
+pytest -v
 black --check src tests
 ruff check src tests
-pytest -v
 
 alembic upgrade head
 psql hireflow -c "\dt"
@@ -55,10 +55,31 @@ alembic upgrade head
 - [x] I updated `requirements.txt` if I added new packages
 
 ## Screenshots / Output (if applicable)
+Ran ``` bash 
+pytest -v ```
 ![alt text](<Screenshot 2026-07-03 at 11.20.45 AM.png>)
+
+Ran ```bash
+black --check src tests
+ruff check src tests ```
 ![alt text](<Screenshot 2026-07-03 at 11.21.08 AM.png>)
+
+Ran ```bash
+alembic upgrade head ```
 ![alt text](<Screenshot 2026-07-03 at 11.21.28 AM.png>)
+
+Ran ```bash
+psql hireflow -c "\dt" ```
 ![alt text](<Screenshot 2026-07-03 at 11.22.00 AM.png>)
+
+Ran ```bash
+psql hireflow -c "\d users" ```
 ![alt text](<Screenshot 2026-07-03 at 11.22.17 AM.png>)
+
+Ran ```bash
+alembic downgrade -1 ```
 ![alt text](<Screenshot 2026-07-03 at 11.22.46 AM.png>)
+
+Ran ```bash
+alembic upgrade head ```
 ![alt text](<Screenshot 2026-07-03 at 11.22.56 AM.png>)
