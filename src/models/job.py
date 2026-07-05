@@ -8,6 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from src.config.database import Base
 
 from datetime import datetime
+
+
 class ListingType(str, enum.Enum):
     internship = "internship"
     full_time = "full_time"
@@ -74,7 +76,7 @@ class Job(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-    DateTime(timezone=True),
-    server_default=func.now(),
-    nullable=False,
-)
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )

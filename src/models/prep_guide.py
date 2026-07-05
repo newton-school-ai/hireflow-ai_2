@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.config.database import Base
 from datetime import datetime
 
+
 class PrepGuide(Base):
     __tablename__ = "prep_guides"
 
@@ -39,10 +40,10 @@ class PrepGuide(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-    DateTime(timezone=True),
-    server_default=func.now(),
-    nullable=False,
-)
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
 
     user = relationship("User")
     application = relationship("Application")
