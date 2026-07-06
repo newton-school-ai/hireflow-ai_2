@@ -92,7 +92,10 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         form = await request.form()
         file = form.get("file")
         from starlette.datastructures import UploadFile as StarletteUploadFile
-        if not file or not (isinstance(file, UploadFile) or isinstance(file, StarletteUploadFile)):
+
+        if not file or not (
+            isinstance(file, UploadFile) or isinstance(file, StarletteUploadFile)
+        ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Resume PDF file is required",

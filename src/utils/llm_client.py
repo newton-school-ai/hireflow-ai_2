@@ -269,9 +269,7 @@ class OllamaClient(LLMClient):
 
 def get_llm_client(provider: str | None = None) -> LLMClient:
     """Returns the configured LLM client instance."""
-    prov = (
-        provider or settings.llm_provider or os.getenv("LLM_PROVIDER", "groq")
-    )
+    prov = provider or settings.llm_provider or os.getenv("LLM_PROVIDER", "groq")
     prov = prov.strip().lower()
 
     if prov == "groq":

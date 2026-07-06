@@ -154,11 +154,15 @@ async def test_get_profile_not_found(client):
 @pytest.mark.asyncio
 @patch("src.api.routes.profile.get_llm_client")
 @patch("pypdf.PdfReader")
-async def test_create_profile_pdf_success(mock_pdf_reader, mock_get_llm, client, db_session):
+async def test_create_profile_pdf_success(
+    mock_pdf_reader, mock_get_llm, client, db_session
+):
     """POST /profile with PDF file upload should parse and extract structured data using LLM."""
     # Mock PDF reader page extraction
     mock_page = MagicMock()
-    mock_page.extract_text.return_value = "Resume content for John Doe. Skills: Python, SQL."
+    mock_page.extract_text.return_value = (
+        "Resume content for John Doe. Skills: Python, SQL."
+    )
     mock_reader_instance = MagicMock()
     mock_reader_instance.pages = [mock_page]
     mock_pdf_reader.return_value = mock_reader_instance
@@ -169,20 +173,18 @@ async def test_create_profile_pdf_success(mock_pdf_reader, mock_get_llm, client,
         "name": "John Doe",
         "email": "john@example.com",
         "skills": ["Python", "SQL"],
-        "experience": [{"company": "A Corp", "role": "Dev", "duration": "1 yr", "description": ""}],
+        "experience": [
+            {"company": "A Corp", "role": "Dev", "duration": "1 yr", "description": ""}
+        ],
         "education": [],
-        "projects": []
+        "projects": [],
     }
     mock_get_llm.return_value = mock_client_instance
 
     # Prepare dummy PDF upload
     pdf_data = b"%PDF-1.4 dummy content"
     files = {"file": ("resume.pdf", io.BytesIO(pdf_data), "application/pdf")}
-    data = {
-        "mode": "internship",
-        "weekly_quota": "3",
-        "confirmation_mode": "batch"
-    }
+    data = {"mode": "internship", "weekly_quota": "3", "confirmation_mode": "batch"}
 
     response = await client.post("/profile", data=data, files=files)
     assert response.status_code == 200
