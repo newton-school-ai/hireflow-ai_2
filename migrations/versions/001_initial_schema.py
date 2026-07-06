@@ -29,12 +29,14 @@ def upgrade() -> None:
         "internship", "job", name="listing_type_enum", create_type=False
     )
     application_status_enum = postgresql.ENUM(
+        "planned",
         "matched",
         "shortlisted",
         "resume_generated",
         "applied",
         "failed",
         "withdrawn",
+        "needs_action",
         name="application_status_enum",
         create_type=False,
     )
@@ -113,9 +115,10 @@ def upgrade() -> None:
             server_default="[]",
             nullable=True,
         ),
-        sa.Column("salary_range", sa.String(length=255), nullable=True),
+        sa.Column("stipend_salary", sa.String(length=255), nullable=True),
         sa.Column("experience_required", sa.String(length=255), nullable=True),
-        sa.Column("source_platform", sa.String(length=100), nullable=True),
+        sa.Column("source", sa.String(length=100), nullable=True),
+        sa.Column("selection_process", sa.Text(), nullable=True),
         sa.Column(
             "is_spam",
             sa.Boolean(),
@@ -248,6 +251,8 @@ def upgrade() -> None:
             server_default="[]",
             nullable=False,
         ),
+        sa.Column("predicted_rounds", sa.Integer(), nullable=True),
+        sa.Column("company_intel", postgresql.JSONB(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
@@ -312,6 +317,7 @@ def upgrade() -> None:
             nullable=True,
         ),
         sa.Column("summary", sa.Text(), nullable=True),
+        sa.Column("report_path", sa.String(length=1024), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

@@ -8,12 +8,16 @@ including skill gaps, learning resources, and mock questions.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import DateTime, Integer, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.types import JSON, Uuid
 
 from src.config.database import Base
+
+# JSONB on PostgreSQL, falls back to JSON on SQLite (for tests).
+JSONBCompat = JSONB().with_variant(JSON, "sqlite")
 
 
 class PrepGuide(Base):
@@ -27,9 +31,11 @@ class PrepGuide(Base):
         id: Unique identifier (UUID).
         user_id: FK to the user this guide is for.
         job_id: FK to the target job (nullable for general guides).
-        skill_gaps: JSON array of skills to improve.
-        resources: JSON array of learning resources (URLs, courses, etc.).
-        mock_questions: JSON array of practice interview questions.
+        skill_gaps: JSONB array of skills to improve.
+        resources: JSONB array of learning resources (URLs, courses, etc.).
+        mock_questions: JSONB array of practice interview questions.
+        predicted_rounds: Estimated number of interview rounds.
+        company_intel: JSONB object with company research data.
         created_at: When the guide was generated.
     """
 
@@ -52,9 +58,13 @@ class PrepGuide(Base):
         nullable=True,
         index=True,
     )
-    skill_gaps: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    resources: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
-    mock_questions: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    skill_gaps: Mapped[list] = mapped_column(JSONBCompat, nullable=False, default=list)
+    resources: Mapped[list] = mapped_column(JSONBCompat, nullable=False, default=list)
+    mock_questions: Mapped[list] = mapped_column(
+        JSONBCompat, nullable=False, default=list
+    )
+    predicted_rounds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    company_intel: Mapped[dict | None] = mapped_column(JSONBCompat, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -19,10 +19,14 @@ from sqlalchemy import (
     Text,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON, Uuid
 
 from src.config.database import Base
+
+# JSONB on PostgreSQL, falls back to JSON on SQLite (for tests).
+JSONBCompat = JSONB().with_variant(JSON, "sqlite")
 
 
 class Job(Base):
@@ -37,10 +41,11 @@ class Job(Base):
         application_url: Direct URL to apply (unique to prevent duplicates).
         posting_date: When the job was posted.
         listing_type: 'internship' or 'job'.
-        skills_required: JSON array of required skills extracted from JD.
-        salary_range: Salary or stipend range as text.
+        skills_required: JSONB array of required skills extracted from JD.
+        stipend_salary: Stipend or salary range as text.
         experience_required: Experience requirement as text.
-        source_platform: Scraper source (e.g., 'lever', 'greenhouse', 'generic').
+        source: Scraper source (e.g., 'lever', 'greenhouse', 'generic').
+        selection_process: Description of the selection/interview process.
         is_spam: Whether the listing was flagged as spam.
         spam_confidence: Confidence score from the spam filter (0.0 to 1.0).
         scraped_at: When the listing was scraped.
@@ -76,11 +81,12 @@ class Job(Base):
         nullable=False,
     )
     skills_required: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=list
+        JSONBCompat, nullable=True, default=list
     )
-    salary_range: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    stipend_salary: Mapped[str | None] = mapped_column(String(255), nullable=True)
     experience_required: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    source_platform: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    source: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    selection_process: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_spam: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )

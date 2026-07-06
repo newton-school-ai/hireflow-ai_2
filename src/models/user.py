@@ -9,10 +9,14 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, Integer, String, func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON, Uuid
 
 from src.config.database import Base
+
+# JSONB on PostgreSQL, falls back to JSON on SQLite (for tests).
+JSONBCompat = JSONB().with_variant(JSON, "sqlite")
 
 
 class User(Base):
@@ -47,7 +51,7 @@ class User(Base):
         default="internship",
         server_default="internship",
     )
-    master_profile: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    master_profile: Mapped[dict | None] = mapped_column(JSONBCompat, nullable=True)
     weekly_quota: Mapped[int] = mapped_column(
         Integer, nullable=False, default=5, server_default="5"
     )

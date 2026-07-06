@@ -17,11 +17,15 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.types import JSON, Uuid
 
 from src.config.database import Base
+
+# JSONB on PostgreSQL, falls back to JSON on SQLite (for tests).
+JSONBCompat = JSONB().with_variant(JSON, "sqlite")
 
 
 class Application(Base):
@@ -63,19 +67,23 @@ class Application(Base):
     )
     match_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     skill_matches: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=list
+        JSONBCompat, nullable=True, default=list
     )
-    skill_gaps: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
+    skill_gaps: Mapped[list | None] = mapped_column(
+        JSONBCompat, nullable=True, default=list
+    )
     resume_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     resume_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(
         Enum(
+            "planned",
             "matched",
             "shortlisted",
             "resume_generated",
             "applied",
             "failed",
             "withdrawn",
+            "needs_action",
             name="application_status_enum",
             create_constraint=True,
         ),

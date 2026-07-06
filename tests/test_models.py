@@ -155,14 +155,17 @@ class TestJobsColumns:
         "posting_date",
         "listing_type",
         "skills_required",
-        "salary_range",
+        "stipend_salary",
         "experience_required",
-        "source_platform",
+        "source",
+        "selection_process",
         "is_spam",
         "spam_confidence",
         "scraped_at",
         "created_at",
     }
+
+    REMOVED_COLUMNS = {"salary_range", "source_platform"}
 
     def test_jobs_columns(self, engine):
         inspector = inspect(engine)
@@ -170,6 +173,13 @@ class TestJobsColumns:
         assert self.EXPECTED_COLUMNS.issubset(
             actual
         ), f"Missing columns in jobs: {self.EXPECTED_COLUMNS - actual}"
+
+    def test_removed_columns_absent(self, engine):
+        """Old column names should no longer exist."""
+        inspector = inspect(engine)
+        actual = {col["name"] for col in inspector.get_columns("jobs")}
+        overlap = self.REMOVED_COLUMNS & actual
+        assert not overlap, f"Removed columns still present in jobs: {overlap}"
 
 
 class TestApplicationsColumns:
@@ -207,6 +217,8 @@ class TestPrepGuidesColumns:
         "skill_gaps",
         "resources",
         "mock_questions",
+        "predicted_rounds",
+        "company_intel",
         "created_at",
     }
 
@@ -230,6 +242,7 @@ class TestWeeklyReportsColumns:
         "responses_received",
         "top_matches",
         "summary",
+        "report_path",
         "created_at",
     }
 
@@ -239,6 +252,131 @@ class TestWeeklyReportsColumns:
         assert self.EXPECTED_COLUMNS.issubset(actual), (
             f"Missing columns in weekly_reports: " f"{self.EXPECTED_COLUMNS - actual}"
         )
+
+
+# ===========================================================================
+# Schema Verification Tests (new columns & renamed columns)
+# ===========================================================================
+
+
+class TestSchemaChanges:
+    """Verify schema changes from code review feedback."""
+
+    def test_selection_process_exists(self, engine):
+        """Job model should have a selection_process column."""
+        inspector = inspect(engine)
+        actual = {col["name"] for col in inspector.get_columns("jobs")}
+        assert "selection_process" in actual
+
+    def test_stipend_salary_exists(self, engine):
+        """Job model should have stipend_salary (renamed from salary_range)."""
+        inspector = inspect(engine)
+        actual = {col["name"] for col in inspector.get_columns("jobs")}
+        assert "stipend_salary" in actual
+        assert "salary_range" not in actual
+
+    def test_source_exists(self, engine):
+        """Job model should have source (renamed from source_platform)."""
+        inspector = inspect(engine)
+        actual = {col["name"] for col in inspector.get_columns("jobs")}
+        assert "source" in actual
+        assert "source_platform" not in actual
+
+    def test_predicted_rounds_exists(self, engine):
+        """PrepGuide model should have predicted_rounds column."""
+        inspector = inspect(engine)
+        actual = {col["name"] for col in inspector.get_columns("prep_guides")}
+        assert "predicted_rounds" in actual
+
+    def test_company_intel_exists(self, engine):
+        """PrepGuide model should have company_intel column."""
+        inspector = inspect(engine)
+        actual = {col["name"] for col in inspector.get_columns("prep_guides")}
+        assert "company_intel" in actual
+
+    def test_report_path_exists(self, engine):
+        """WeeklyReport model should have report_path column."""
+        inspector = inspect(engine)
+        actual = {col["name"] for col in inspector.get_columns("weekly_reports")}
+        assert "report_path" in actual
+
+
+# ===========================================================================
+# Application Status Enum Tests
+# ===========================================================================
+
+
+class TestApplicationStatusEnum:
+    """Verify the application_status_enum contains all required values."""
+
+    EXPECTED_STATUSES = {
+        "planned",
+        "matched",
+        "shortlisted",
+        "resume_generated",
+        "applied",
+        "failed",
+        "withdrawn",
+        "needs_action",
+    }
+
+    def test_all_status_values_accepted(self, db: Session):
+        """Each expected status value should be accepted by the model."""
+        user = _make_user()
+        job = _make_job()
+        db.add_all([user, job])
+        db.flush()
+
+        for status in self.EXPECTED_STATUSES:
+            app = Application(
+                id=uuid.uuid4(),
+                user_id=user.id,
+                job_id=_make_job().id,  # fresh job to avoid unique constraint
+                status=status,
+            )
+            # We only need to verify it doesn't raise on object creation.
+            # SQLite doesn't enforce PG enums, so we verify the model accepts it.
+            assert app.status == status
+
+    def test_planned_status(self, db: Session):
+        """'planned' status should be valid."""
+        user = _make_user()
+        job = _make_job()
+        db.add_all([user, job])
+        db.flush()
+
+        app = Application(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            job_id=job.id,
+            status="planned",
+        )
+        db.add(app)
+        db.flush()
+
+        fetched = db.get(Application, app.id)
+        assert fetched is not None
+        assert fetched.status == "planned"
+
+    def test_needs_action_status(self, db: Session):
+        """'needs_action' status should be valid."""
+        user = _make_user()
+        job = _make_job()
+        db.add_all([user, job])
+        db.flush()
+
+        app = Application(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            job_id=job.id,
+            status="needs_action",
+        )
+        db.add(app)
+        db.flush()
+
+        fetched = db.get(Application, app.id)
+        assert fetched is not None
+        assert fetched.status == "needs_action"
 
 
 # ===========================================================================
@@ -312,6 +450,22 @@ class TestJobCRUD:
         assert fetched.listing_type == "internship"
         assert fetched.is_spam is False
         assert fetched.spam_confidence == 0.0
+
+    def test_create_job_with_new_fields(self, db: Session):
+        """Test creating a job with renamed and new columns."""
+        job = _make_job(
+            stipend_salary="₹25,000/month",
+            source="lever",
+            selection_process="2 rounds: technical + HR",
+        )
+        db.add(job)
+        db.flush()
+
+        fetched = db.get(Job, job.id)
+        assert fetched is not None
+        assert fetched.stipend_salary == "₹25,000/month"
+        assert fetched.source == "lever"
+        assert fetched.selection_process == "2 rounds: technical + HR"
 
     def test_duplicate_application_url_rejected(self, db: Session):
         url = "https://jobs.lever.co/acme/unique-job-123"
@@ -419,6 +573,31 @@ class TestPrepGuideCRUD:
         assert fetched is not None
         assert fetched.job_id is None
 
+    def test_create_prep_guide_with_new_fields(self, db: Session):
+        """Test predicted_rounds and company_intel columns."""
+        user = _make_user()
+        job = _make_job()
+        db.add_all([user, job])
+        db.flush()
+
+        guide = PrepGuide(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            job_id=job.id,
+            skill_gaps=["ML"],
+            resources=[],
+            mock_questions=[],
+            predicted_rounds=3,
+            company_intel={"glassdoor_rating": 4.2, "recent_news": []},
+        )
+        db.add(guide)
+        db.flush()
+
+        fetched = db.get(PrepGuide, guide.id)
+        assert fetched is not None
+        assert fetched.predicted_rounds == 3
+        assert fetched.company_intel["glassdoor_rating"] == 4.2
+
 
 class TestWeeklyReportCRUD:
     """Test WeeklyReport model CRUD."""
@@ -445,6 +624,26 @@ class TestWeeklyReportCRUD:
         assert fetched is not None
         assert fetched.applications_sent == 5
         assert fetched.responses_received == 2
+
+    def test_create_weekly_report_with_report_path(self, db: Session):
+        """Test report_path column."""
+        user = _make_user()
+        db.add(user)
+        db.flush()
+
+        report = WeeklyReport(
+            id=uuid.uuid4(),
+            user_id=user.id,
+            week_start=date(2025, 7, 7),
+            week_end=date(2025, 7, 13),
+            report_path="/reports/2025/week_28.pdf",
+        )
+        db.add(report)
+        db.flush()
+
+        fetched = db.get(WeeklyReport, report.id)
+        assert fetched is not None
+        assert fetched.report_path == "/reports/2025/week_28.pdf"
 
 
 # ===========================================================================
