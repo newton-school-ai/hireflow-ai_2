@@ -26,7 +26,8 @@ from typing import Any
 
 import fitz  # PyMuPDF
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from pydantic import BaseModel, EmailStr, Field
+from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel, EmailStr, Field, ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -284,6 +285,9 @@ async def create_profile_pdf(
             detail=f"Invalid mode '{mode}'. Must be 'internship' or 'job'.",
         )
 
+    if file.content_type != "application/pdf":
+        raise HTTPException(status_code=415, detail="Only PDF files are supported.")
+
     # --- Read PDF ---
     content = await file.read()
     if not content:
@@ -291,7 +295,7 @@ async def create_profile_pdf(
 
     # --- Extract text ---
     try:
-        resume_text = _extract_pdf_text(content)
+        resume_text = await run_in_threadpool(_extract_pdf_text, content)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -316,17 +320,19 @@ async def create_profile_pdf(
     try:
         parsed = parse_llm_json(raw_response)
     except ValueError as exc:
+        logger.error("LLM parse error: %s", exc)
         raise HTTPException(
             status_code=422,
-            detail=f"LLM returned unparseable response: {exc}",
+            detail="The resume could not be processed into a valid profile format.",
         )
 
     try:
         extracted = ResumeExtractedProfile.model_validate(parsed)
-    except Exception as exc:
+    except ValidationError as exc:
+        logger.error("LLM validation error: %s", exc)
         raise HTTPException(
             status_code=422,
-            detail=f"LLM output failed validation: {exc}",
+            detail="The resume could not be processed into a valid profile format.",
         )
 
     # --- Build master_profile from extracted data ---
@@ -371,7 +377,6 @@ async def create_profile_pdf(
             status_code=409,
             detail=f"A user with email '{email}' already exists.",
         )
-
     db.refresh(user)
     return ProfileResponse.model_validate(user)
 

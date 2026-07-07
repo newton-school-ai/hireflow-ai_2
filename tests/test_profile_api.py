@@ -407,7 +407,7 @@ class TestPostPdfUpload:
                 )
 
         assert response.status_code == 422
-        assert "unparseable" in response.json()["detail"].lower()
+        assert "could not be processed" in response.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_pdf_upload_llm_missing_email(self):

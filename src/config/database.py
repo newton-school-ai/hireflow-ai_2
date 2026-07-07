@@ -19,12 +19,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from src.config.settings import settings
 
-if not settings.database_url:
-    raise ValueError(
-        "DATABASE_URL environment variable is not configured. "
-        "Please set the DATABASE_URL environment variable or configure it in your .env file."
-    )
-
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

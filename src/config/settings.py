@@ -31,11 +31,11 @@ class Settings(BaseSettings):
     database_url: str = Field(alias="DATABASE_URL")
 
     # LLM Provider Configuration
-    llm_provider: str = Field(alias="LLM_PROVIDER")
+    llm_provider: str = Field(default="groq", alias="LLM_PROVIDER")
 
     # Groq
-    groq_api_key: str = Field(alias="GROQ_API_KEY")
-    groq_model: str = Field(alias="GROQ_MODEL")
+    groq_api_key: str = Field(default="", alias="GROQ_API_KEY")
+    groq_model: str = Field(default="llama-3.1-8b-instant", alias="GROQ_MODEL")
 
     # Gemini
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
