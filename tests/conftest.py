@@ -3,11 +3,6 @@ Pytest configuration and global fixtures.
 
 Sets up dummy environment variables for tests to prevent validation
 errors during module import.
-
-Architecture notes for testing:
-- This file configures a temporary DATABASE_URL for test collection.
-- Individual tests still override database sessions with SQLite fixtures.
-- The application itself never silently switches to SQLite.
 """
 
 import os

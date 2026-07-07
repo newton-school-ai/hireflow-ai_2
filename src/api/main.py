@@ -10,6 +10,8 @@ Usage:
 from fastapi import FastAPI
 from src.api.routes.profile import router as profile_router
 
+from src.api.routes.profile import router as profile_router
+
 app = FastAPI(
     title="HireFlow AI",
     description="AI-powered job application automation platform.",
