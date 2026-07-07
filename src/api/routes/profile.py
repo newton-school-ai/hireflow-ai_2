@@ -37,12 +37,22 @@ class ProfileCreate(BaseModel):
 
     name: str = Field(..., max_length=255, description="Full name of the user")
     email: EmailStr = Field(..., description="Unique email address")
-    skills: List[str] = Field(default_factory=list, description="List of technical/soft skills")
-    mode: str = Field(default="internship", description="Target mode: 'internship' or 'job'")
+    skills: List[str] = Field(
+        default_factory=list, description="List of technical/soft skills"
+    )
+    mode: str = Field(
+        default="internship", description="Target mode: 'internship' or 'job'"
+    )
     weekly_quota: int = Field(default=5, ge=0, description="Weekly application limit")
-    target_roles: List[str] = Field(default_factory=list, description="Target job titles/roles")
-    preferred_locations: List[str] = Field(default_factory=list, description="Preferred locations")
-    min_stipend: Optional[Any] = Field(default=None, description="Minimum expected stipend/salary")
+    target_roles: List[str] = Field(
+        default_factory=list, description="Target job titles/roles"
+    )
+    preferred_locations: List[str] = Field(
+        default_factory=list, description="Preferred locations"
+    )
+    min_stipend: Optional[Any] = Field(
+        default=None, description="Minimum expected stipend/salary"
+    )
 
     @field_validator("mode")
     @classmethod
@@ -124,9 +134,7 @@ Required JSON Structure:
     openapi_extra={
         "requestBody": {
             "content": {
-                "application/json": {
-                    "schema": ProfileCreate.model_json_schema()
-                },
+                "application/json": {"schema": ProfileCreate.model_json_schema()},
                 "multipart/form-data": {
                     "schema": {
                         "type": "object",
@@ -134,20 +142,17 @@ Required JSON Structure:
                             "file": {
                                 "type": "string",
                                 "format": "binary",
-                                "description": "PDF Resume file to parse"
+                                "description": "PDF Resume file to parse",
                             }
                         },
-                        "required": ["file"]
+                        "required": ["file"],
                     }
-                }
+                },
             }
         }
-    }
+    },
 )
-async def create_profile(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def create_profile(request: Request, db: Session = Depends(get_db)):
     """Creates a user profile.
 
     Supports two media types:
@@ -164,7 +169,7 @@ async def create_profile(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid JSON payload or validation error: {str(e)}"
+                detail=f"Invalid JSON payload or validation error: {str(e)}",
             )
 
     elif "multipart/form-data" in content_type:
@@ -173,14 +178,14 @@ async def create_profile(
         if not file or not isinstance(file, UploadFile):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Resume file must be provided under the form-data key 'file'"
+                detail="Resume file must be provided under the form-data key 'file'",
             )
 
         pdf_bytes = await file.read()
         if not pdf_bytes:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Uploaded PDF file is empty"
+                detail="Uploaded PDF file is empty",
             )
 
         try:
@@ -188,25 +193,25 @@ async def create_profile(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to extract text from PDF: {str(e)}"
+                detail=f"Failed to extract text from PDF: {str(e)}",
             )
 
         if not resume_text.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Could not extract any text from the PDF file"
+                detail="Could not extract any text from the PDF file",
             )
 
         try:
             llm = LLMClient()
             parsed_data = llm.generate_json(
                 prompt=f"Resume Text:\n{resume_text}",
-                schema_prompt=RESUME_PARSE_SCHEMA_PROMPT
+                schema_prompt=RESUME_PARSE_SCHEMA_PROMPT,
             )
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"LLM parsing failed: {str(e)}"
+                detail=f"LLM parsing failed: {str(e)}",
             )
 
         try:
@@ -214,13 +219,13 @@ async def create_profile(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"LLM generated JSON did not validate: {str(e)}"
+                detail=f"LLM generated JSON did not validate: {str(e)}",
             )
 
     else:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Unsupported media type. Must be application/json or multipart/form-data"
+            detail="Unsupported media type. Must be application/json or multipart/form-data",
         )
 
     # Check if a user with the same email already exists
@@ -228,7 +233,7 @@ async def create_profile(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists"
+            detail="User with this email already exists",
         )
 
     # Map profile_data fields to User model
@@ -242,7 +247,7 @@ async def create_profile(
             "target_roles": profile_data.target_roles,
             "preferred_locations": profile_data.preferred_locations,
             "min_stipend": profile_data.min_stipend,
-        }
+        },
     )
 
     db.add(new_user)
@@ -255,17 +260,13 @@ async def create_profile(
 @router.get(
     "/profile/{user_id}",
     response_model=UserProfileResponse,
-    status_code=status.HTTP_200_OK
+    status_code=status.HTTP_200_OK,
 )
-def get_profile(
-    user_id: UUID,
-    db: Session = Depends(get_db)
-):
+def get_profile(user_id: UUID, db: Session = Depends(get_db)):
     """Retrieves a complete user profile by their unique ID."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     return user

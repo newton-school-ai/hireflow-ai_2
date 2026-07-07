@@ -181,7 +181,9 @@ async def test_create_profile_duplicate_email(db_session):
 @pytest.mark.asyncio
 @patch("src.api.routes.profile.extract_text_from_pdf")
 @patch("src.utils.llm_client.LLMClient.generate_json")
-async def test_create_profile_multipart(mock_generate_json, mock_extract_text, db_session):
+async def test_create_profile_multipart(
+    mock_generate_json, mock_extract_text, db_session
+):
     """POST /profile (Multipart) extracts PDF text and calls LLM client successfully."""
     mock_extract_text.return_value = "Candidate Resume Text Content"
     mock_generate_json.return_value = {
@@ -195,7 +197,9 @@ async def test_create_profile_multipart(mock_generate_json, mock_extract_text, d
         "min_stipend": 5000,
     }
 
-    files = {"file": ("resume.pdf", b"%PDF-1.4 dummy binary content", "application/pdf")}
+    files = {
+        "file": ("resume.pdf", b"%PDF-1.4 dummy binary content", "application/pdf")
+    }
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

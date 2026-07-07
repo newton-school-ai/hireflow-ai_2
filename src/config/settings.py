@@ -30,7 +30,9 @@ class Settings(BaseSettings):
     gemini_model: str = Field(default="gemini-1.5-flash", alias="GEMINI_MODEL")
 
     # Ollama settings
-    ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
+    ollama_base_url: str = Field(
+        default="http://localhost:11434", alias="OLLAMA_BASE_URL"
+    )
     ollama_model: str = Field(default="llama3", alias="OLLAMA_MODEL")
 
     # OpenAI settings
