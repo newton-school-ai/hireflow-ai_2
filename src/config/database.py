@@ -1,6 +1,13 @@
 """
 Database configuration for HireFlow AI.
 
+Architecture:
+- Configuration is loaded dynamically from .env.
+- No database credentials are hardcoded.
+- `settings.database_url` is the single source of truth.
+- Does not fall back to SQLite; fails fast if DATABASE_URL is missing.
+- Alembic also reads this same database URL dynamically through migrations/env.py.
+
 Provides the SQLAlchemy engine, session factory, declarative base,
 and a FastAPI-compatible dependency for database sessions.
 
@@ -11,14 +18,6 @@ Usage:
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from src.config.settings import settings
-
-<<<<<<< HEAD
-DATABASE_URL = settings.database_url
-=======
-from src.config.settings import get_settings
->>>>>>> b4b919a (feat: implement profile creation API with JSON and PDF resume parsing support)
-
-settings = get_settings()
 
 if not settings.database_url:
     raise ValueError(
