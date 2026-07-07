@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 Configuration settings for HireFlow AI.
 
@@ -14,20 +13,11 @@ class ApplicationMode(str, Enum):
     JOB = "job"
 
 
-=======
-from functools import lru_cache
-
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
->>>>>>> b4b919a (feat: implement profile creation API with JSON and PDF resume parsing support)
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
-<<<<<<< HEAD
         case_sensitive=False,
     )
 
@@ -71,36 +61,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-=======
-    )
-
-    # Database
-    database_url: str = Field(alias="DATABASE_URL")
-
-    # LLM
-    llm_provider: str = Field(alias="LLM_PROVIDER")
-
-    # Groq
-    groq_api_key: str = Field(alias="GROQ_API_KEY")
-    groq_model: str = Field(alias="GROQ_MODEL")
-
-    # Gemini
-    google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
-    gemini_model: str = Field(default="", alias="GEMINI_MODEL")
-
-    # OpenAI
-    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
-
-    # Ollama
-    ollama_base_url: str = Field(default="", alias="OLLAMA_BASE_URL")
-    ollama_model: str = Field(default="", alias="OLLAMA_MODEL")
-
-    # App
-    app_env: str = Field(default="development", alias="APP_ENV")
-    debug: bool = Field(default=True, alias="DEBUG")
-
-
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
->>>>>>> b4b919a (feat: implement profile creation API with JSON and PDF resume parsing support)
