@@ -56,15 +56,7 @@ class User(Base):
         Integer, nullable=False, default=5, server_default="5"
     )
     confirmation_mode: Mapped[str] = mapped_column(
-        Enum(
-            "batch",
-            "individual",
-            name="confirmation_mode_enum",
-            create_constraint=True,
-        ),
-        nullable=False,
-        default="batch",
-        server_default="batch",
+        String(20), nullable=False, default="batch", server_default="batch"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

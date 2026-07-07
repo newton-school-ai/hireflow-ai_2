@@ -80,11 +80,6 @@ class GroqClient(BaseLLMClient):
     """
 
     def __init__(self, api_key: str, model: str) -> None:
-        if not api_key or api_key.startswith("your_"):
-            raise LLMConfigError(
-                "GROQ_API_KEY is missing or invalid. "
-                "Please configure it in .env to use Groq."
-            )
         self._api_key = api_key
         self._model = model
 
@@ -157,31 +152,58 @@ class OllamaClient(BaseLLMClient):
 # ---------------------------------------------------------------------------
 
 
+def _is_placeholder(value: str) -> bool:
+    """Return True if a value looks like an unfilled .env placeholder."""
+    return not value or value.startswith("your_")
+
+
 def get_llm_client() -> BaseLLMClient:
     """Return an LLM client for the configured provider.
+
+    Resolution order:
+    1. If ``LLM_PROVIDER`` is explicitly set and its credentials exist → use it.
+    2. Otherwise try Groq → Gemini → OpenAI → Ollama in priority order.
+    3. If nothing is configured → raise ``LLMConfigError``.
 
     Returns:
         A concrete ``BaseLLMClient`` subclass instance.
 
     Raises:
-        LLMConfigError: If the configured provider is missing required keys.
+        LLMConfigError: If no provider has valid credentials.
     """
     settings = get_settings()
-    provider = settings.llm_provider.lower().strip()
+    explicit = settings.llm_provider.lower().strip()
 
-    if provider == "groq":
-        client = GroqClient(settings.groq_api_key, settings.groq_model)
-    elif provider == "gemini":
-        client = GeminiClient(settings.google_api_key, settings.gemini_model)
-    elif provider == "openai":
-        client = OpenAIClient(settings.openai_api_key)
-    elif provider == "ollama":
-        client = OllamaClient(settings.ollama_base_url, settings.ollama_model)
-    else:
-        raise LLMConfigError(f"Unknown LLM provider configured: {provider}")
+    # Priority list with explicit choice first.
+    priority = ["groq", "gemini", "openai", "ollama"]
+    if explicit in priority:
+        priority.remove(explicit)
+        priority.insert(0, explicit)
 
-    logger.info("LLM provider resolved: %s", provider)
-    return client
+    for provider in priority:
+        client = _try_build(provider, settings)
+        if client is not None:
+            logger.info("LLM provider resolved: %s", provider)
+            return client
+
+    raise LLMConfigError(
+        "No LLM provider configured. Set at least one of: "
+        "GROQ_API_KEY, GOOGLE_API_KEY, OPENAI_API_KEY, or configure Ollama. "
+        "See .env.example for details."
+    )
+
+
+def _try_build(provider: str, settings) -> BaseLLMClient | None:  # noqa: ANN001
+    """Attempt to build a client for *provider*. Returns None if credentials missing."""
+    if provider == "groq" and not _is_placeholder(settings.groq_api_key):
+        return GroqClient(settings.groq_api_key, settings.groq_model)
+    if provider == "gemini" and not _is_placeholder(settings.google_api_key):
+        return GeminiClient(settings.google_api_key, settings.gemini_model)
+    if provider == "openai" and not _is_placeholder(settings.openai_api_key):
+        return OpenAIClient(settings.openai_api_key)
+    if provider == "ollama":
+        return OllamaClient(settings.ollama_base_url, settings.ollama_model)
+    return None
 
 
 # ---------------------------------------------------------------------------

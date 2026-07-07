@@ -19,6 +19,8 @@ app = FastAPI(
 # -- Register routers --
 app.include_router(profile_router)
 
+app.include_router(profile_router)
+
 
 @app.get("/", tags=["Health"])
 def health_check():
