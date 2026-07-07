@@ -23,10 +23,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # ---------------------------------------------------------------------------
 load_dotenv()
 
-# ---------------------------------------------------------------------------
-# Import all models so their tables are registered on Base.metadata.
-# This import MUST come after sys.path manipulation.
-# ---------------------------------------------------------------------------
+from src.config.settings import get_settings  # noqa: E402
 from src.models import Base  # noqa: E402
 
 # ---------------------------------------------------------------------------
@@ -34,10 +31,14 @@ from src.models import Base  # noqa: E402
 # ---------------------------------------------------------------------------
 config = context.config
 
-# Override sqlalchemy.url with the environment variable if present.
-database_url = os.getenv("DATABASE_URL")
-if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+# Override sqlalchemy.url with the environment variable from settings or env.
+settings = get_settings()
+database_url = settings.database_url or os.getenv("DATABASE_URL")
+if not database_url:
+    raise RuntimeError(
+        "DATABASE_URL is not set. Migrations require a valid database connection URL."
+    )
+config.set_main_option("sqlalchemy.url", database_url)
 
 # Set up Python logging from the alembic.ini [loggers] section.
 if config.config_file_name is not None:

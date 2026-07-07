@@ -39,6 +39,7 @@ uvicorn[standard]>=0.29.0
 pydantic[email]>=2.7.0
 pydantic-settings>=2.2.0
 python-multipart>=0.0.9
+email-validator>=2.0.0    # required by Pydantic EmailStr
 
 # --- Database ---
 sqlalchemy>=2.0.30
@@ -60,6 +61,7 @@ tavily-python>=0.3.3
 python-dotenv>=1.0.1
 pypdf>=4.2.0
 boto3>=1.34.0           # for S3 storage (optional)
+pymupdf>=1.25.0         # PDF text extraction for resume upload
 
 # --- Utilities ---
 tenacity>=8.3.0         # retry logic
