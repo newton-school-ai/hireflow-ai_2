@@ -98,7 +98,7 @@ async def test_create_profile_json_invalid_mode(client):
 
 @pytest.mark.asyncio
 async def test_create_profile_json_duplicate_email(client):
-    """POST /profile with duplicate email should return a 400 error."""
+    """POST /profile with duplicate email should return a 409 error."""
     payload1 = {
         "name": "User One",
         "email": "dup@example.com",
@@ -113,7 +113,7 @@ async def test_create_profile_json_duplicate_email(client):
         "mode": "internship",
     }
     response2 = await client.post("/profile", json=payload2)
-    assert response2.status_code == 400
+    assert response2.status_code == 409
     assert "Email already registered" in response2.text
 
 

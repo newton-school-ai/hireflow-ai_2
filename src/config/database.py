@@ -8,10 +8,14 @@ Usage:
     from src.config.database import get_db, Base
 """
 
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from src.config.settings import settings
 
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:password@localhost:5432/hireflow"
+)
 DATABASE_URL = settings.database_url
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)

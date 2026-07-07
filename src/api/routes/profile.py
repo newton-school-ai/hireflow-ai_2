@@ -59,7 +59,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         existing_user = db.query(User).filter(User.email == data.email).first()
         if existing_user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Email already registered",
             )
 
@@ -107,6 +107,37 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         mode = form.get("mode", "internship")
         weekly_quota_str = form.get("weekly_quota", "5")
         confirmation_mode = form.get("confirmation_mode", "batch")
+
+        # Helpers to parse lists/integers from form fields
+        def parse_form_list(value) -> list[str]:
+            if not value:
+                return []
+            if isinstance(value, list):
+                return [str(v).strip() for v in value]
+            val_str = str(value).strip()
+            if val_str.startswith("[") and val_str.endswith("]"):
+                try:
+                    import json
+
+                    parsed = json.loads(val_str)
+                    if isinstance(parsed, list):
+                        return [str(v).strip() for v in parsed]
+                except Exception:
+                    pass
+            return [v.strip() for v in val_str.split(",") if v.strip()]
+
+        def parse_form_int(value) -> int | None:
+            if value is None or str(value).strip() == "":
+                return None
+            try:
+                return int(str(value).strip())
+            except ValueError:
+                return None
+
+        target_roles = parse_form_list(form.get("target_roles"))
+        preferred_locations = parse_form_list(form.get("preferred_locations"))
+        min_stipend = parse_form_int(form.get("min_stipend"))
+        min_salary = parse_form_int(form.get("min_salary"))
 
         # Validate mode
         if mode not in ["internship", "job"]:
@@ -201,13 +232,17 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         existing_user = db.query(User).filter(User.email == email).first()
         if existing_user:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="Email already registered",
             )
 
         # Build master profile
         master_profile = {
             "skills": extracted.get("skills", []),
+            "target_roles": target_roles,
+            "preferred_locations": preferred_locations,
+            "min_stipend": min_stipend,
+            "min_salary": min_salary,
             "experience": extracted.get("experience", []),
             "education": extracted.get("education", []),
             "projects": extracted.get("projects", []),
