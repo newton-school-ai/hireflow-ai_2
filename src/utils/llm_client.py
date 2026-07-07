@@ -1,286 +1,214 @@
 """
-Unified LLM client interface for HireFlow AI.
-Supports Groq, Gemini, OpenAI, Anthropic, and Ollama.
+Unified LLM client for HireFlow AI.
 """
 
-import json
-import os
-import re
 from abc import ABC, abstractmethod
+import json
+import logging
+
 from src.config.settings import settings
 
+logger = logging.getLogger(__name__)
 
-class LLMClient(ABC):
-    """Abstract Base Class for all LLM clients, ensuring consistent interface."""
+
+class LLMConfigError(ValueError):
+    """Raised when no LLM provider is properly configured."""
+
+
+class BaseLLMClient(ABC):
+    """Abstract base for all LLM provider clients."""
 
     @abstractmethod
-    def chat(self, prompt: str, system_prompt: str | None = None, **kwargs) -> str:
-        """Send a chat prompt to the LLM and return the string response."""
-        pass
+    def chat(self, prompt: str) -> str:
+        """Send a prompt and return the raw text response."""
 
-    def extract(
-        self, prompt: str, system_prompt: str | None = None, **kwargs
-    ) -> str | dict | list:
-        """Send a prompt requesting structured data.
-
-        Attempts to return a parsed JSON object (dict or list), otherwise falls back to raw string.
-        """
-        # Append formatting instruction to prompt if not explicitly present
-        if "json" not in prompt.lower():
-            prompt = (
-                f"{prompt}\n\n"
-                "Respond ONLY with a valid JSON object or JSON array. "
-                "Do not include any explanation or markdown formatting like ```json."
-            )
-
-        response = self.chat(prompt, system_prompt, **kwargs)
-        clean_response = response.strip()
-
-        # Strip markdown code fences if present
-        if clean_response.startswith("```"):
-            clean_response = re.sub(r"^```(?:json)?\n", "", clean_response)
-            clean_response = re.sub(r"\n```$", "", clean_response)
-            clean_response = clean_response.strip()
-
-        try:
-            return json.loads(clean_response)
-        except json.JSONDecodeError:
-            # Fallback regex search for JSON block
-            match = re.search(r"(\{.*\}|\[.*\])", clean_response, re.DOTALL)
-            if match:
-                try:
-                    return json.loads(match.group(1))
-                except json.JSONDecodeError:
-                    pass
-            return response
+    @abstractmethod
+    def extract(self, prompt: str) -> dict:
+        """Send a prompt optimized for structured extraction."""
 
 
-class GroqClient(LLMClient):
-    """LLM Client for Groq API."""
+def parse_llm_json(raw: str) -> str:
+    """Strip markdown code fences."""
+    text = raw.strip()
+    if text.startswith("```"):
+        first_newline = text.find("\n")
+        if first_newline != -1:
+            text = text[first_newline + 1 :]
+    if text.endswith("```"):
+        text = text[: -len("```")]
+    return text.strip()
 
-    def __init__(self):
-        api_key = settings.groq_api_key or os.getenv("GROQ_API_KEY")
-        if not api_key or "your_groq" in api_key:
-            raise ValueError(
-                "Groq API key is missing. Please set GROQ_API_KEY in your environment or .env file."
-            )
-        try:
-            from groq import Groq
-        except ImportError:
-            raise ImportError(
-                "groq library is not installed. Please install it using pip."
-            )
-        self.client = Groq(api_key=api_key)
-        self.model = settings.groq_model or "llama3-8b-8192"
 
-    def chat(self, prompt: str, system_prompt: str | None = None, **kwargs) -> str:
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
+class GroqClient(BaseLLMClient):
+    def __init__(self, api_key: str, model: str) -> None:
+        if not api_key or api_key.startswith("your_"):
+            raise LLMConfigError("GROQ_API_KEY is missing or invalid.")
+        self._api_key = api_key
+        self._model = model
 
-        # Pop response_format for safety
-        response_format = kwargs.pop("response_format", None)
-        if "json" in prompt.lower() and not response_format:
-            response_format = {"type": "json_object"}
+    def chat(self, prompt: str) -> str:
+        from groq import Groq
 
         try:
-            completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                response_format=response_format,
-                **kwargs,
+            client = Groq(api_key=self._api_key)
+            response = client.chat.completions.create(
+                model=self._model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
             )
-            return completion.choices[0].message.content
+            return response.choices[0].message.content or ""
         except Exception as e:
-            raise RuntimeError(f"Groq API request failed: {e}")
+            logger.error(f"Groq API error: {e}")
+            raise RuntimeError("Groq API call failed")
 
-
-class GeminiClient(LLMClient):
-    """LLM Client for Google Gemini API."""
-
-    def __init__(self):
-        api_key = settings.google_api_key or os.getenv("GOOGLE_API_KEY")
-        if not api_key or "your_google" in api_key:
-            raise ValueError(
-                "Google API key is missing. Please set GOOGLE_API_KEY in your environment or .env file."
-            )
+    def extract(self, prompt: str) -> dict:
+        raw = self.chat(prompt)
+        text = parse_llm_json(raw)
         try:
-            import google.generativeai as genai
-        except ImportError:
-            raise ImportError(
-                "google-generativeai library is not installed. Please install it using pip."
-            )
-        genai.configure(api_key=api_key)
-        self.model_name = settings.gemini_model or "gemini-1.5-flash"
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return text
 
-    def chat(self, prompt: str, system_prompt: str | None = None, **kwargs) -> str:
+
+class GeminiClient(BaseLLMClient):
+    def __init__(self, api_key: str, model: str) -> None:
+        if not api_key or api_key.startswith("your_"):
+            raise LLMConfigError("GOOGLE_API_KEY is missing or invalid.")
+        self._api_key = api_key
+        self._model = model
+
+    def chat(self, prompt: str) -> str:
         import google.generativeai as genai
 
-        config = {}
-        if system_prompt:
-            config["system_instruction"] = system_prompt
-
-        if "json" in prompt.lower() and "response_mime_type" not in kwargs:
-            config["response_mime_type"] = "application/json"
-
-        # Pop parameters not supported directly by GenerateContent
-        for param in ["response_format", "response_mime_type"]:
-            if param in kwargs:
-                val = kwargs.pop(param)
-                if param == "response_mime_type":
-                    config["response_mime_type"] = val
-
         try:
-            model = genai.GenerativeModel(self.model_name)
-            response = model.generate_content(
-                prompt,
-                generation_config=(
-                    genai.types.GenerationConfig(**config) if config else None
-                ),
-                **kwargs,
-            )
+            genai.configure(api_key=self._api_key)
+            model = genai.GenerativeModel(self._model)
+            response = model.generate_content(prompt)
             return response.text
         except Exception as e:
-            raise RuntimeError(f"Gemini API request failed: {e}")
+            logger.error(f"Gemini API error: {e}")
+            raise RuntimeError("Gemini API call failed")
 
-
-class OpenAIClient(LLMClient):
-    """LLM Client for OpenAI API."""
-
-    def __init__(self):
-        api_key = settings.openai_api_key or os.getenv("OPENAI_API_KEY")
-        if not api_key or "your_openai" in api_key:
-            raise ValueError(
-                "OpenAI API key is missing. Please set OPENAI_API_KEY in your environment or .env file."
-            )
+    def extract(self, prompt: str) -> dict:
+        raw = self.chat(prompt)
+        text = parse_llm_json(raw)
         try:
-            from openai import OpenAI
-        except ImportError:
-            raise ImportError(
-                "openai library is not installed. Please install it using pip."
-            )
-        self.client = OpenAI(api_key=api_key)
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return text
 
-    def chat(self, prompt: str, system_prompt: str | None = None, **kwargs) -> str:
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
 
-        # Handle json response format
-        response_format = kwargs.pop("response_format", None)
-        if "json" in prompt.lower() and not response_format:
-            response_format = {"type": "json_object"}
+class OpenAIClient(BaseLLMClient):
+    def __init__(self, api_key: str, model: str) -> None:
+        if not api_key or api_key.startswith("your_"):
+            raise LLMConfigError("OPENAI_API_KEY is missing or invalid.")
+        self._api_key = api_key
+        self._model = model
+
+    def chat(self, prompt: str) -> str:
+        from openai import OpenAI
 
         try:
-            completion = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                response_format=response_format,
-                **kwargs,
+            client = OpenAI(api_key=self._api_key)
+            response = client.chat.completions.create(
+                model=self._model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
             )
-            return completion.choices[0].message.content
+            return response.choices[0].message.content or ""
         except Exception as e:
-            raise RuntimeError(f"OpenAI API request failed: {e}")
+            logger.error(f"OpenAI API error: {e}")
+            raise RuntimeError("OpenAI API call failed")
 
-
-class AnthropicClient(LLMClient):
-    """LLM Client for Anthropic Claude API."""
-
-    def __init__(self):
-        api_key = settings.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
-        if not api_key or "your_anthropic" in api_key:
-            raise ValueError(
-                "Anthropic API key is missing. Please set ANTHROPIC_API_KEY in your environment or .env file."
-            )
+    def extract(self, prompt: str) -> dict:
+        raw = self.chat(prompt)
+        text = parse_llm_json(raw)
         try:
-            from anthropic import Anthropic
-        except ImportError:
-            raise ImportError(
-                "anthropic library is not installed. Please install it using pip."
-            )
-        self.client = Anthropic(api_key=api_key)
-        self.model = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20240620")
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return text
 
-    def chat(self, prompt: str, system_prompt: str | None = None, **kwargs) -> str:
-        messages = [{"role": "user", "content": prompt}]
-        max_tokens = kwargs.pop("max_tokens", 4000)
 
-        # Remove response format params as Anthropic doesn't support them directly in the same way
-        kwargs.pop("response_format", None)
-        kwargs.pop("response_mime_type", None)
+class AnthropicClient(BaseLLMClient):
+    def __init__(self, api_key: str, model: str) -> None:
+        if not api_key or api_key.startswith("your_"):
+            raise LLMConfigError("ANTHROPIC_API_KEY is missing or invalid.")
+        self._api_key = api_key
+        self._model = model
+
+    def chat(self, prompt: str) -> str:
+        from anthropic import Anthropic
 
         try:
-            completion = self.client.messages.create(
-                model=self.model,
-                messages=messages,
-                system=system_prompt if system_prompt else None,
-                max_tokens=max_tokens,
-                **kwargs,
+            client = Anthropic(api_key=self._api_key)
+            response = client.messages.create(
+                model=self._model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=4096,
+                temperature=0.1,
             )
-            return completion.content[0].text
+            return response.content[0].text
         except Exception as e:
-            raise RuntimeError(f"Anthropic API request failed: {e}")
+            logger.error(f"Anthropic API error: {e}")
+            raise RuntimeError("Anthropic API call failed")
+
+    def extract(self, prompt: str) -> dict:
+        raw = self.chat(prompt)
+        text = parse_llm_json(raw)
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return text
 
 
-class OllamaClient(LLMClient):
-    """LLM Client for local Ollama service."""
+class OllamaClient(BaseLLMClient):
+    def __init__(self, base_url: str, model: str) -> None:
+        if not base_url:
+            raise LLMConfigError("OLLAMA_BASE_URL is missing.")
+        self._base_url = base_url
+        self._model = model
 
-    def __init__(self):
-        self.base_url = settings.ollama_base_url or "http://localhost:11434"
-        self.model = settings.ollama_model or "llama3"
-
-    def chat(self, prompt: str, system_prompt: str | None = None, **kwargs) -> str:
-        import httpx
-
-        url = f"{self.base_url}/api/chat"
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "stream": False,
-        }
-
-        # Check format
-        fmt = kwargs.pop("format", None)
-        if "json" in prompt.lower() and not fmt:
-            fmt = "json"
-        if fmt:
-            payload["format"] = fmt
-
-        # Remove unsupported parameters
-        kwargs.pop("response_format", None)
-        kwargs.pop("response_mime_type", None)
+    def chat(self, prompt: str) -> str:
+        import requests
 
         try:
-            response = httpx.post(url, json=payload, timeout=60.0)
+            response = requests.post(
+                f"{self._base_url}/api/generate",
+                json={
+                    "model": self._model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {"temperature": 0.1},
+                },
+                timeout=60,
+            )
             response.raise_for_status()
-            data = response.json()
-            return data["message"]["content"]
+            return response.json().get("response", "")
         except Exception as e:
-            raise RuntimeError(f"Ollama request failed: {e}")
+            logger.error(f"Ollama API error: {e}")
+            raise RuntimeError("Ollama API call failed")
+
+    def extract(self, prompt: str) -> dict:
+        raw = self.chat(prompt)
+        text = parse_llm_json(raw)
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            return text
 
 
-def get_llm_client(provider: str | None = None) -> LLMClient:
-    """Returns the configured LLM client instance."""
-    prov = provider or settings.llm_provider or os.getenv("LLM_PROVIDER", "groq")
-    prov = prov.strip().lower()
+def get_llm_client() -> BaseLLMClient:
+    provider = settings.llm_provider.lower().strip()
 
-    if prov == "groq":
-        return GroqClient()
-    elif prov == "gemini":
-        return GeminiClient()
-    elif prov == "openai":
-        return OpenAIClient()
-    elif prov == "anthropic":
-        return AnthropicClient()
-    elif prov == "ollama":
-        return OllamaClient()
+    if provider == "groq":
+        return GroqClient(settings.groq_api_key, settings.groq_model)
+    elif provider == "gemini":
+        return GeminiClient(settings.google_api_key, settings.gemini_model)
+    elif provider == "openai":
+        return OpenAIClient(settings.openai_api_key, settings.openai_model)
+    elif provider == "anthropic":
+        return AnthropicClient(settings.anthropic_api_key, settings.anthropic_model)
+    elif provider == "ollama":
+        return OllamaClient(settings.ollama_base_url, settings.ollama_model)
     else:
-        raise ValueError(f"Unsupported LLM provider: {prov}")
+        raise ValueError(f"Unsupported LLM provider: {provider}")
