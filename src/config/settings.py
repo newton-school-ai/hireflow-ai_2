@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # Groq
     groq_api_key: str | None = None
-    groq_model: str = "llama3-8b-8192"
+    groq_model: str = "llama-3.1-8b-instant"
 
     # Google Gemini
     google_api_key: str | None = None
