@@ -97,14 +97,20 @@ class LeverScraper:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                logger.info(f"Fetching job detail page: {detail_url} (Attempt {attempt + 1})")
+                logger.info(
+                    f"Fetching job detail page: {detail_url} (Attempt {attempt + 1})"
+                )
                 page.goto(detail_url, timeout=30000, wait_until="domcontentloaded")
-                
+
                 # Wait for core content wrapper if present
                 try:
-                    page.wait_for_selector(".posting-page, .section.page-centered", timeout=5000)
+                    page.wait_for_selector(
+                        ".posting-page, .section.page-centered", timeout=5000
+                    )
                 except Exception:
-                    logger.debug("Core selectors not found, attempting generic load wait.")
+                    logger.debug(
+                        "Core selectors not found, attempting generic load wait."
+                    )
 
                 # Extract page content
                 html_content = page.content()
@@ -117,12 +123,12 @@ class LeverScraper:
                 # Extract description
                 # Typically, description text is located in .posting-sections or multiple .section.page-centered
                 jd_text = ""
-                
+
                 # Try .posting-sections first
                 posting_sections = page.locator(".posting-sections")
                 if posting_sections.count() > 0:
                     jd_text = posting_sections.first.inner_text().strip()
-                
+
                 # Fallback to .section.page-centered
                 if not jd_text:
                     sections = page.locator(".section.page-centered")
@@ -141,10 +147,12 @@ class LeverScraper:
 
                 # Clean location if detail page has better info
                 detail_location = None
-                location_el = page.locator(".posting-categories .location, .posting-headline .location").first
+                location_el = page.locator(
+                    ".posting-categories .location, .posting-headline .location"
+                ).first
                 if location_el.count() > 0:
                     detail_location = location_el.inner_text().strip()
-                
+
                 final_location = detail_location or location or "Remote"
 
                 # Standardize workplace types (e.g. Remote, Hybrid, On-site) if present
@@ -167,12 +175,14 @@ class LeverScraper:
                     "listing_type": listing_type,
                     "source": "lever",
                 }
-                
+
                 context.close()
                 return job_data
 
             except Exception as e:
-                logger.error(f"Error scraping job detail {detail_url} on attempt {attempt + 1}: {e}")
+                logger.error(
+                    f"Error scraping job detail {detail_url} on attempt {attempt + 1}: {e}"
+                )
                 if attempt == max_retries - 1:
                     context.close()
                     return None
@@ -195,7 +205,9 @@ class LeverScraper:
                 .first()
             )
             if existing:
-                logger.info(f"Job already exists in database: {job_data['application_url']}")
+                logger.info(
+                    f"Job already exists in database: {job_data['application_url']}"
+                )
                 return existing
 
             db_job = Job(
@@ -212,11 +224,15 @@ class LeverScraper:
             self.db.add(db_job)
             self.db.commit()
             self.db.refresh(db_job)
-            logger.info(f"Successfully saved job to database: {job_data['role_title']} at {job_data['company_name']}")
+            logger.info(
+                f"Successfully saved job to database: {job_data['role_title']} at {job_data['company_name']}"
+            )
             return db_job
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Failed to save job {job_data['application_url']} to database: {e}")
+            logger.error(
+                f"Failed to save job {job_data['application_url']} to database: {e}"
+            )
             return None
 
     def scrape(self, board_url: str, target_mode: str) -> list[dict]:
@@ -261,17 +277,17 @@ class LeverScraper:
 
                 for i in range(count):
                     el = posting_elements.nth(i)
-                    
+
                     # Extract title and link
                     title_el = el.locator("a.posting-title h5, a.posting-title").first
                     link_el = el.locator("a.posting-title, a").first
-                    
+
                     if title_el.count() == 0 or link_el.count() == 0:
                         continue
 
                     title = title_el.inner_text().strip()
                     href = link_el.get_attribute("href")
-                    
+
                     if not href or not title:
                         continue
 
@@ -287,11 +303,19 @@ class LeverScraper:
 
                     # Extract location if visible on main board
                     loc_el = el.locator(".posting-meta .location, .location").first
-                    location = loc_el.inner_text().strip() if loc_el.count() > 0 else None
+                    location = (
+                        loc_el.inner_text().strip() if loc_el.count() > 0 else None
+                    )
 
                     # Extract workplace type if visible on main board
-                    workplace_el = el.locator(".posting-meta .workplaceTypes, .workplaceTypes").first
-                    workplace = workplace_el.inner_text().strip() if workplace_el.count() > 0 else None
+                    workplace_el = el.locator(
+                        ".posting-meta .workplaceTypes, .workplaceTypes"
+                    ).first
+                    workplace = (
+                        workplace_el.inner_text().strip()
+                        if workplace_el.count() > 0
+                        else None
+                    )
                     if workplace and location:
                         location = f"{location} ({workplace})"
 
@@ -300,28 +324,32 @@ class LeverScraper:
 
                     # Filter based on target mode
                     if listing_type != target_mode:
-                        logger.debug(f"Skipping '{title}' (classified as '{listing_type}', target is '{target_mode}')")
+                        logger.debug(
+                            f"Skipping '{title}' (classified as '{listing_type}', target is '{target_mode}')"
+                        )
                         continue
 
-                    listings.append({
-                        "url": detail_url,
-                        "title": title,
-                        "location": location,
-                        "listing_type": listing_type,
-                    })
+                    listings.append(
+                        {
+                            "url": detail_url,
+                            "title": title,
+                            "location": location,
+                            "listing_type": listing_type,
+                        }
+                    )
 
                 # Check for pagination / Next page
                 # Look for standard next selectors
                 next_selectors = [
                     'a[rel="next"]',
-                    'a.next',
-                    'a.next-page',
-                    '.pagination-next a',
+                    "a.next",
+                    "a.next-page",
+                    ".pagination-next a",
                     'a:has-text("Next")',
                     'button:has-text("Next")',
                     '[aria-label="Next"]',
                 ]
-                
+
                 next_button = None
                 for selector in next_selectors:
                     try:
@@ -349,7 +377,9 @@ class LeverScraper:
             context.close()
 
             # Process matched listings and retrieve detail pages
-            logger.info(f"Total listings matched with mode '{target_mode}': {len(listings)}")
+            logger.info(
+                f"Total listings matched with mode '{target_mode}': {len(listings)}"
+            )
             for index, list_item in enumerate(listings):
                 # Rate limit check: delay at least 1 second
                 if index > 0:
@@ -363,17 +393,21 @@ class LeverScraper:
                         .first()
                     )
                     if existing:
-                        logger.info(f"Skipping detail page for existing job: {list_item['url']}")
-                        scraped_jobs.append({
-                            "company_name": existing.company_name,
-                            "role_title": existing.role_title,
-                            "jd_text": existing.jd_text,
-                            "location": existing.location,
-                            "application_url": existing.application_url,
-                            "posting_date": existing.posting_date,
-                            "listing_type": existing.listing_type,
-                            "source": existing.source,
-                        })
+                        logger.info(
+                            f"Skipping detail page for existing job: {list_item['url']}"
+                        )
+                        scraped_jobs.append(
+                            {
+                                "company_name": existing.company_name,
+                                "role_title": existing.role_title,
+                                "jd_text": existing.jd_text,
+                                "location": existing.location,
+                                "application_url": existing.application_url,
+                                "posting_date": existing.posting_date,
+                                "listing_type": existing.listing_type,
+                                "source": existing.source,
+                            }
+                        )
                         continue
 
                 job_detail = self.scrape_job_detail(
@@ -390,7 +424,9 @@ class LeverScraper:
 
             browser.close()
 
-        logger.info(f"Finished Lever scrape. Successfully scraped {len(scraped_jobs)} jobs.")
+        logger.info(
+            f"Finished Lever scrape. Successfully scraped {len(scraped_jobs)} jobs."
+        )
         return scraped_jobs
 
 

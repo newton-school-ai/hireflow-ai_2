@@ -49,10 +49,13 @@ def db(engine):
 # Mock Playwright Classes
 # ---------------------------------------------------------------------------
 
+
 class MockElement:
     """Mock element representing a single HTML node or locator item."""
 
-    def __init__(self, inner_text_val="", href=None, location="", workplace="", is_empty=False):
+    def __init__(
+        self, inner_text_val="", href=None, location="", workplace="", is_empty=False
+    ):
         self.inner_text_val = inner_text_val
         self.href = href
         self.location = location
@@ -71,11 +74,21 @@ class MockElement:
         return None
 
     def locator(self, selector: str):
-        if "location" in selector or "metadata" in selector or "body__secondary" in selector:
+        if (
+            "location" in selector
+            or "metadata" in selector
+            or "body__secondary" in selector
+        ):
             return MockLocator([MockElement(self.location)])
         elif "workplaceTypes" in selector:
             return MockLocator([MockElement(self.workplace)])
-        elif "title" in selector or "h5" in selector or selector == "a" or "body--medium" in selector or "body" in selector:
+        elif (
+            "title" in selector
+            or "h5" in selector
+            or selector == "a"
+            or "body--medium" in selector
+            or "body" in selector
+        ):
             return MockLocator([MockElement(self.inner_text_val, self.href)])
         return MockLocator([])
 
@@ -140,43 +153,62 @@ class MockPage:
     def content(self) -> str:
         fixture = self.fixtures.get(self.current_url, {})
         return fixture.get("html", "")
+
     def locator(self, selector: str, **kwargs):
         fixture = self.fixtures.get(self.current_url, {})
-        
+
         # Matching listings elements
-        if selector in [".posting", ".opening, div.opening", ".opening, div.opening, tr.job-post, .job-post"]:
+        if selector in [
+            ".posting",
+            ".opening, div.opening",
+            ".opening, div.opening, tr.job-post, .job-post",
+        ]:
             listings = fixture.get("listings", [])
-            return MockLocator([
-                MockElement(
-                    inner_text_val=x["title"],
-                    href=x["url"],
-                    location=x.get("location", ""),
-                    workplace=x.get("workplace", ""),
-                ) for x in listings
-            ])
-            
+            return MockLocator(
+                [
+                    MockElement(
+                        inner_text_val=x["title"],
+                        href=x["url"],
+                        location=x.get("location", ""),
+                        workplace=x.get("workplace", ""),
+                    )
+                    for x in listings
+                ]
+            )
+
         # Detail selectors
         if selector == ".posting-sections":
             if "posting_sections" in fixture:
                 return MockLocator([MockElement(fixture["posting_sections"])])
             return MockLocator([])
-            
+
         if selector == ".section.page-centered":
             if "sections" in fixture:
                 return MockLocator([MockElement(sec) for sec in fixture["sections"]])
             return MockLocator([])
-            
-        if selector in [".posting-categories .location, .posting-headline .location", ".location, #header .location", ".job__location, .location, #header .location"]:
+
+        if selector in [
+            ".posting-categories .location, .posting-headline .location",
+            ".location, #header .location",
+            ".job__location, .location, #header .location",
+        ]:
             if "location" in fixture:
                 return MockLocator([MockElement(fixture["location"])])
             return MockLocator([])
 
-        if selector in [".posting-categories .workplaceTypes", ".posting-meta .workplaceTypes, .workplaceTypes"]:
+        if selector in [
+            ".posting-categories .workplaceTypes",
+            ".posting-meta .workplaceTypes, .workplaceTypes",
+        ]:
             if "workplace" in fixture:
                 return MockLocator([MockElement(fixture["workplace"])])
             return MockLocator([])
-            
-        if selector in ["#content", "#job-body, .opening-body", ".job__description, #content, #job-body, .opening-body"]:
+
+        if selector in [
+            "#content",
+            "#job-body, .opening-body",
+            ".job__description, #content, #job-body, .opening-body",
+        ]:
             if "content" in fixture:
                 return MockLocator([MockElement(fixture["content"])])
             return MockLocator([])
@@ -186,13 +218,12 @@ class MockPage:
                 return MockLocator([MockElement(fixture["title"])])
             return MockLocator([])
 
-
         # Pagination Next elements
         next_selectors = [
             'a[rel="next"]',
-            'a.next',
-            'a.next-page',
-            '.pagination-next a',
+            "a.next",
+            "a.next-page",
+            ".pagination-next a",
             'a:has-text("Next")',
             'button:has-text("Next")',
             '[aria-label="Next"]',
@@ -260,6 +291,7 @@ class MockPlaywright:
 # Lever Scraper Tests
 # ---------------------------------------------------------------------------
 
+
 class TestLeverScraper:
     """Test suite for Lever scraper."""
 
@@ -302,7 +334,10 @@ class TestLeverScraper:
 
         # 1. Scrape only internship mode
         scraper_intern = LeverScraper(db_session=db)
-        with patch("src.scrapers.lever_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.lever_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper_intern.scrape(board_url, "internship")
 
         assert len(jobs) == 1
@@ -323,7 +358,10 @@ class TestLeverScraper:
         db.commit()
 
         scraper_job = LeverScraper(db_session=db)
-        with patch("src.scrapers.lever_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.lever_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper_job.scrape(board_url, "job")
 
         assert len(jobs) == 1
@@ -370,17 +408,24 @@ class TestLeverScraper:
         # We can implement this by updating the listings dynamically after has_next check is triggered.
         # To make it super simple, we append the listings for page 2 to the same board page
         # but only activate them on next click. Let's make listings return first job, then next click adds second job.
-        
+
         # Let's adjust listings structure
         fixtures[board_url]["listings"] = [
             {"title": "AI Engineer", "url": detail_url_1, "location": "San Francisco"},
-            {"title": "Software Engineer 2", "url": detail_url_2, "location": "Seattle"},
+            {
+                "title": "Software Engineer 2",
+                "url": detail_url_2,
+                "location": "Seattle",
+            },
         ]
-        
-        # When pagination clicks next, it will just re-read the listings. We already filtered visited URLs, 
+
+        # When pagination clicks next, it will just re-read the listings. We already filtered visited URLs,
         # so detail_url_1 is marked visited and won't be processed twice. detail_url_2 will be parsed on the second loop!
         scraper = LeverScraper(db_session=db)
-        with patch("src.scrapers.lever_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.lever_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper.scrape(board_url, "job")
 
         # Both jobs should be processed because they have mode = "job"
@@ -391,14 +436,13 @@ class TestLeverScraper:
         """Test handling of empty pages or invalid HTML structures."""
         board_url = "https://jobs.lever.co/empty"
 
-        fixtures = {
-            board_url: {
-                "listings": []  # empty
-            }
-        }
+        fixtures = {board_url: {"listings": []}}  # empty
 
         scraper = LeverScraper(db_session=db)
-        with patch("src.scrapers.lever_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.lever_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper.scrape(board_url, "job")
 
         assert len(jobs) == 0
@@ -425,14 +469,21 @@ class TestLeverScraper:
         fixtures = {
             board_url: {
                 "listings": [
-                    {"title": "Duplicate SWE", "url": detail_url, "location": "San Francisco"}
+                    {
+                        "title": "Duplicate SWE",
+                        "url": detail_url,
+                        "location": "San Francisco",
+                    }
                 ]
             },
             # No detail page fixture is needed because it should skip fetching!
         }
 
         scraper = LeverScraper(db_session=db)
-        with patch("src.scrapers.lever_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.lever_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper.scrape(board_url, "job")
 
         # The scraper returns the list of processed jobs (including duplicates it skipped fetching)
@@ -445,6 +496,7 @@ class TestLeverScraper:
 # ---------------------------------------------------------------------------
 # Greenhouse Scraper Tests
 # ---------------------------------------------------------------------------
+
 
 class TestGreenhouseScraper:
     """Test suite for Greenhouse scraper."""
@@ -484,7 +536,10 @@ class TestGreenhouseScraper:
 
         # 1. Internship mode
         scraper_intern = GreenhouseScraper(db_session=db)
-        with patch("src.scrapers.greenhouse_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.greenhouse_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper_intern.scrape(board_url, "internship")
 
         assert len(jobs) == 1
@@ -501,7 +556,10 @@ class TestGreenhouseScraper:
         db.commit()
 
         scraper_job = GreenhouseScraper(db_session=db)
-        with patch("src.scrapers.greenhouse_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.greenhouse_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper_job.scrape(board_url, "job")
 
         assert len(jobs) == 1
@@ -540,7 +598,10 @@ class TestGreenhouseScraper:
         }
 
         scraper = GreenhouseScraper(db_session=db)
-        with patch("src.scrapers.greenhouse_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.greenhouse_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper.scrape(board_url, "job")
 
         assert len(jobs) == 2
@@ -573,7 +634,10 @@ class TestGreenhouseScraper:
         }
 
         scraper = GreenhouseScraper(db_session=db)
-        with patch("src.scrapers.greenhouse_scraper.sync_playwright", return_value=MockPlaywright(fixtures)):
+        with patch(
+            "src.scrapers.greenhouse_scraper.sync_playwright",
+            return_value=MockPlaywright(fixtures),
+        ):
             jobs = scraper.scrape(board_url, "job")
 
         assert len(jobs) == 1

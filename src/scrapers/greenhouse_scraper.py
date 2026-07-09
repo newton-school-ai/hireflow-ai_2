@@ -109,13 +109,20 @@ class GreenhouseScraper:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                logger.info(f"Fetching job detail page: {detail_url} (Attempt {attempt + 1})")
+                logger.info(
+                    f"Fetching job detail page: {detail_url} (Attempt {attempt + 1})"
+                )
                 page.goto(detail_url, timeout=30000, wait_until="domcontentloaded")
-                                # Wait for content container
+                # Wait for content container
                 try:
-                    page.wait_for_selector("#content, #job-body, .opening-body, .job__description", timeout=5000)
+                    page.wait_for_selector(
+                        "#content, #job-body, .opening-body, .job__description",
+                        timeout=5000,
+                    )
                 except Exception:
-                    logger.debug("Greenhouse content selectors not found, using general wait.")
+                    logger.debug(
+                        "Greenhouse content selectors not found, using general wait."
+                    )
 
                 html_content = page.content()
 
@@ -125,12 +132,20 @@ class GreenhouseScraper:
                     company_name = extracted_company
 
                 # Extract title if not set, or verify title
-                title_el = page.locator(".job__title h1, h1.app-title, #header h1").first
-                final_title = title_el.inner_text().strip() if title_el.count() > 0 else role_title
+                title_el = page.locator(
+                    ".job__title h1, h1.app-title, #header h1"
+                ).first
+                final_title = (
+                    title_el.inner_text().strip()
+                    if title_el.count() > 0
+                    else role_title
+                )
 
                 # Extract JD text
                 jd_text = ""
-                desc_el = page.locator(".job__description, #content, #job-body, .opening-body").first
+                desc_el = page.locator(
+                    ".job__description, #content, #job-body, .opening-body"
+                ).first
                 if desc_el.count() > 0:
                     jd_text = desc_el.inner_text().strip()
 
@@ -140,10 +155,12 @@ class GreenhouseScraper:
 
                 # Extract location if not set, or get clean location
                 detail_location = None
-                loc_el = page.locator(".job__location, .location, #header .location").first
+                loc_el = page.locator(
+                    ".job__location, .location, #header .location"
+                ).first
                 if loc_el.count() > 0:
                     detail_location = loc_el.inner_text().replace("at ", "").strip()
-                
+
                 final_location = detail_location or location or "Remote"
 
                 # Greenhouse doesn't show posting date, return None
@@ -163,7 +180,9 @@ class GreenhouseScraper:
                 context.close()
                 return job_data
             except Exception as e:
-                logger.error(f"Error scraping job detail {detail_url} on attempt {attempt + 1}: {e}")
+                logger.error(
+                    f"Error scraping job detail {detail_url} on attempt {attempt + 1}: {e}"
+                )
                 if attempt == max_retries - 1:
                     context.close()
                     return None
@@ -186,7 +205,9 @@ class GreenhouseScraper:
                 .first()
             )
             if existing:
-                logger.info(f"Job already exists in database: {job_data['application_url']}")
+                logger.info(
+                    f"Job already exists in database: {job_data['application_url']}"
+                )
                 return existing
 
             db_job = Job(
@@ -203,16 +224,22 @@ class GreenhouseScraper:
             self.db.add(db_job)
             self.db.commit()
             self.db.refresh(db_job)
-            logger.info(f"Successfully saved job to database: {job_data['role_title']} at {job_data['company_name']}")
+            logger.info(
+                f"Successfully saved job to database: {job_data['role_title']} at {job_data['company_name']}"
+            )
             return db_job
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Failed to save job {job_data['application_url']} to database: {e}")
+            logger.error(
+                f"Failed to save job {job_data['application_url']} to database: {e}"
+            )
             return None
 
     def scrape(self, board_url: str, target_mode: str) -> list[dict]:
         """Scrape the Greenhouse board URL, filter by mode, and save to DB."""
-        logger.info(f"Starting Greenhouse scrape for {board_url} with mode {target_mode}")
+        logger.info(
+            f"Starting Greenhouse scrape for {board_url} with mode {target_mode}"
+        )
         company_name = self.extract_company_name(board_url)
         scraped_jobs = []
 
@@ -237,18 +264,22 @@ class GreenhouseScraper:
                 logger.info(f"Processing listings page {page_num}...")
                 # Check for standard opening container
                 try:
-                    page.wait_for_selector(".opening, div.opening, tr.job-post, .job-post", timeout=10000)
+                    page.wait_for_selector(
+                        ".opening, div.opening, tr.job-post, .job-post", timeout=10000
+                    )
                 except Exception:
                     logger.warning("No openings found on current page within timeout.")
                     break
 
-                opening_elements = page.locator(".opening, div.opening, tr.job-post, .job-post")
+                opening_elements = page.locator(
+                    ".opening, div.opening, tr.job-post, .job-post"
+                )
                 count = opening_elements.count()
                 logger.info(f"Found {count} openings on page {page_num}")
 
                 for i in range(count):
                     el = opening_elements.nth(i)
-                    
+
                     # Extract title link
                     link_el = el.locator("a").first
                     if link_el.count() == 0:
@@ -263,7 +294,7 @@ class GreenhouseScraper:
                         title = link_el.inner_text().strip()
 
                     href = link_el.get_attribute("href")
-                    
+
                     if not href or not title:
                         continue
 
@@ -282,33 +313,41 @@ class GreenhouseScraper:
                     visited_urls.add(detail_url)
 
                     # Extract location
-                    loc_el = el.locator("span.location, .location, p.body__secondary, p.body--metadata").first
-                    location = loc_el.inner_text().strip() if loc_el.count() > 0 else None
+                    loc_el = el.locator(
+                        "span.location, .location, p.body__secondary, p.body--metadata"
+                    ).first
+                    location = (
+                        loc_el.inner_text().strip() if loc_el.count() > 0 else None
+                    )
                     listing_type = self.classify_listing_type(title)
 
                     # Filter based on target mode
                     if listing_type != target_mode:
-                        logger.debug(f"Skipping '{title}' (classified as '{listing_type}', target is '{target_mode}')")
+                        logger.debug(
+                            f"Skipping '{title}' (classified as '{listing_type}', target is '{target_mode}')"
+                        )
                         continue
 
-                    listings.append({
-                        "url": detail_url,
-                        "title": title,
-                        "location": location,
-                        "listing_type": listing_type,
-                    })
+                    listings.append(
+                        {
+                            "url": detail_url,
+                            "title": title,
+                            "location": location,
+                            "listing_type": listing_type,
+                        }
+                    )
 
                 # Check for pagination / Next page
                 next_selectors = [
                     'a[rel="next"]',
-                    'a.next',
-                    'a.next-page',
-                    '.pagination-next a',
+                    "a.next",
+                    "a.next-page",
+                    ".pagination-next a",
                     'a:has-text("Next")',
                     'button:has-text("Next")',
                     '[aria-label="Next"]',
                 ]
-                
+
                 next_button = None
                 for selector in next_selectors:
                     try:
@@ -335,7 +374,9 @@ class GreenhouseScraper:
             context.close()
 
             # Process matched listings
-            logger.info(f"Total listings matched with mode '{target_mode}': {len(listings)}")
+            logger.info(
+                f"Total listings matched with mode '{target_mode}': {len(listings)}"
+            )
             for index, list_item in enumerate(listings):
                 # Rate limit: 1.2 second delay between calls
                 if index > 0:
@@ -349,17 +390,21 @@ class GreenhouseScraper:
                         .first()
                     )
                     if existing:
-                        logger.info(f"Skipping detail page for existing job: {list_item['url']}")
-                        scraped_jobs.append({
-                            "company_name": existing.company_name,
-                            "role_title": existing.role_title,
-                            "jd_text": existing.jd_text,
-                            "location": existing.location,
-                            "application_url": existing.application_url,
-                            "posting_date": existing.posting_date,
-                            "listing_type": existing.listing_type,
-                            "source": existing.source,
-                        })
+                        logger.info(
+                            f"Skipping detail page for existing job: {list_item['url']}"
+                        )
+                        scraped_jobs.append(
+                            {
+                                "company_name": existing.company_name,
+                                "role_title": existing.role_title,
+                                "jd_text": existing.jd_text,
+                                "location": existing.location,
+                                "application_url": existing.application_url,
+                                "posting_date": existing.posting_date,
+                                "listing_type": existing.listing_type,
+                                "source": existing.source,
+                            }
+                        )
                         continue
 
                 job_detail = self.scrape_job_detail(
@@ -376,7 +421,9 @@ class GreenhouseScraper:
 
             browser.close()
 
-        logger.info(f"Finished Greenhouse scrape. Successfully scraped {len(scraped_jobs)} jobs.")
+        logger.info(
+            f"Finished Greenhouse scrape. Successfully scraped {len(scraped_jobs)} jobs."
+        )
         return scraped_jobs
 
 
