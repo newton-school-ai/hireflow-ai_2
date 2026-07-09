@@ -2,7 +2,7 @@ import argparse
 import time
 import logging
 from urllib.parse import urlparse, urljoin
-from playwright.sync_api import sync_playwright, Page
+from playwright.sync_api import sync_playwright
 from src.config.database import SessionLocal
 from src.models.job import Job
 
