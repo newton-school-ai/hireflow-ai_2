@@ -101,7 +101,10 @@ def test_lever_missing_fields_and_malformed(browser_context, monkeypatch):
 
     scraper = LeverScraper(delay=0)
     saved_jobs = []
-    monkeypatch.setattr("src.scrapers.lever_scraper.save_job", lambda **kwargs: saved_jobs.append(kwargs))
+    monkeypatch.setattr(
+        "src.scrapers.lever_scraper.save_job",
+        lambda **kwargs: saved_jobs.append(kwargs),
+    )
 
     scraper._scrape_job(page, "TestCompany", "http://fake.com/job")
 
@@ -131,7 +134,10 @@ def test_greenhouse_successful_extraction(browser_context, monkeypatch):
 
     scraper = GreenhouseScraper(delay=0)
     saved_jobs = []
-    monkeypatch.setattr("src.scrapers.greenhouse_scraper.save_job", lambda **kwargs: saved_jobs.append(kwargs))
+    monkeypatch.setattr(
+        "src.scrapers.greenhouse_scraper.save_job",
+        lambda **kwargs: saved_jobs.append(kwargs),
+    )
 
     scraper._scrape_job(page, "TestCompany", "http://fake.com/job")
 
@@ -186,7 +192,10 @@ def test_greenhouse_malformed(browser_context, monkeypatch):
 
     scraper = GreenhouseScraper(delay=0)
     saved_jobs = []
-    monkeypatch.setattr("src.scrapers.greenhouse_scraper.save_job", lambda **kwargs: saved_jobs.append(kwargs))
+    monkeypatch.setattr(
+        "src.scrapers.greenhouse_scraper.save_job",
+        lambda **kwargs: saved_jobs.append(kwargs),
+    )
 
     scraper._scrape_job(page, "TestCompany", "http://fake.com/job")
 

@@ -108,9 +108,7 @@ class GenericScraper:
                 try:
                     page.goto(url, wait_until="networkidle", timeout=15000)
                 except Exception as e:
-                    logger.error(
-                        f"Failed to load dynamic page {url}: {e}", exc_info=True
-                    )
+                    logger.error(f"Failed to load dynamic page {url}: {e}")
                     browser.close()
                     return []
 
@@ -128,13 +126,11 @@ class GenericScraper:
                         if job:
                             results.append(job)
                     except Exception as e:
-                        logger.error(
-                            f"Error scraping dynamic job {link}: {e}", exc_info=True
-                        )
+                        logger.error(f"Error scraping dynamic job {link}: {e}")
 
                 browser.close()
         except Exception as e:
-            logger.error(f"Playwright error: {e}", exc_info=True)
+            logger.error(f"Playwright error: {e}")
 
         return results
 
@@ -169,7 +165,7 @@ class GenericScraper:
         try:
             page.goto(job_url, wait_until="domcontentloaded", timeout=10000)
         except Exception as e:
-            logger.error(f"Failed to load job {job_url}: {e}", exc_info=True)
+            logger.error(f"Failed to load job {job_url}: {e}")
             return None
 
         # Title

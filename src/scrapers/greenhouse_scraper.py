@@ -31,7 +31,7 @@ class GreenhouseScraper:
             try:
                 self._scrape_board(page, company_name, board_url)
             except Exception as e:
-                logger.error(f"Error scraping {board_url}: {e}", exc_info=True)
+                logger.error(f"Error scraping {board_url}: {e}")
             finally:
                 browser.close()
 
@@ -39,7 +39,7 @@ class GreenhouseScraper:
         try:
             page.goto(board_url, wait_until="domcontentloaded")
         except Exception as e:
-            logger.error(f"Failed to load board {board_url}: {e}", exc_info=True)
+            logger.error(f"Failed to load board {board_url}: {e}")
             return
 
         time.sleep(self.delay)
@@ -81,9 +81,9 @@ class GreenhouseScraper:
                             ) and len(path_parts) >= 2:
                                 job_links.add(abs_href)
                     except Exception as e:
-                        logger.error(f"Error extracting links: {e}", exc_info=True)
+                        logger.error(f"Error extracting links: {e}")
             except Exception as e:
-                logger.error(f"Error extracting links: {e}", exc_info=True)
+                logger.error(f"Error extracting links: {e}")
 
             # Pagination check
             try:
@@ -116,7 +116,7 @@ class GreenhouseScraper:
             try:
                 self._scrape_job(page, company_name, link)
             except Exception as e:
-                logger.error(f"Error scraping job {link}: {e}", exc_info=True)
+                logger.error(f"Error scraping job {link}: {e}")
             time.sleep(self.delay)
 
     def _scrape_job(self, page: Page, company_name: str, job_url: str):
@@ -128,7 +128,7 @@ class GreenhouseScraper:
             except PlaywrightTimeoutError:
                 pass
         except Exception as e:
-            logger.error(f"Failed to load job {job_url}: {e}", exc_info=True)
+            logger.error(f"Failed to load job {job_url}: {e}")
             return
 
         try:
@@ -140,7 +140,7 @@ class GreenhouseScraper:
         except PlaywrightTimeoutError:
             role_title = "Unknown Role"
         except Exception as e:
-            logger.error(f"Failed to extract title for {job_url}: {e}", exc_info=True)
+            logger.error(f"Failed to extract title for {job_url}: {e}")
             return
 
         try:

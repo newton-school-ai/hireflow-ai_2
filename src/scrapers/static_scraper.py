@@ -70,7 +70,7 @@ class StaticScraper:
             resp.raise_for_status()
             return resp.text
         except requests.RequestException as e:
-            logger.error(f"Failed to fetch {url}: {e}", exc_info=True)
+            logger.error(f"Failed to fetch {url}: {e}")
             return None
 
     def _extract_job_links(self, soup: BeautifulSoup, base_url: str) -> list[str]:
