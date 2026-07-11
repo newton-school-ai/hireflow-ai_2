@@ -1,3 +1,9 @@
+"""Greenhouse scraper for HireFlow AI.
+
+Uses Playwright to navigate and extract job postings from Greenhouse career boards.
+Designed to handle Greenhouse's specific DOM structure, dynamic loading, and pagination.
+"""
+
 import time
 import logging
 import argparse

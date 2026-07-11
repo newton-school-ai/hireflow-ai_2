@@ -1,3 +1,9 @@
+"""Lever scraper for HireFlow AI.
+
+Uses Playwright to navigate and extract job postings from Lever career boards.
+Designed to handle Lever's specific DOM structure, dynamic loading, and pagination.
+"""
+
 import time
 import logging
 import argparse
