@@ -163,6 +163,8 @@ def detect_skills(text: str) -> list[str]:
     Uses word-boundary matching for single-word skills to avoid false
     positives (e.g. "ago" inside "django" won't match "go").  Multi-word
     skills are matched as case-insensitive substrings.
+
+    Returns a sorted list to guarantee deterministic output order.
     """
     found: list[str] = []
     text_lower = text.lower()
@@ -175,7 +177,9 @@ def detect_skills(text: str) -> list[str]:
         if skill in text_lower:
             found.append(skill)
 
-    return found
+    # Sort to guarantee deterministic output order since the patterns
+    # are derived from an unordered set (KNOWN_SKILLS).
+    return sorted(found)
 
 
 # ---------------------------------------------------------------------------
