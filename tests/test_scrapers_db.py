@@ -17,7 +17,7 @@ def test_lever_save_job_db():
     try:
         scraper = LeverScraper(delay=0)
         # Patch SessionLocal to return our in-memory SQLite session
-        with patch("src.scrapers.lever_scraper.SessionLocal", TestingSessionLocal):
+        with patch("src.scrapers.scraper_utils.SessionLocal", TestingSessionLocal):
             scraper._save_job(
                 company_name="TestCompany",
                 role_title="Software Engineer Intern",
@@ -54,7 +54,7 @@ def test_greenhouse_save_job_db():
     try:
         scraper = GreenhouseScraper(delay=0)
         # Patch SessionLocal to return our in-memory SQLite session
-        with patch("src.scrapers.greenhouse_scraper.SessionLocal", TestingSessionLocal):
+        with patch("src.scrapers.scraper_utils.SessionLocal", TestingSessionLocal):
             scraper._save_job(
                 company_name="TestCompany",
                 role_title="Backend Developer",
