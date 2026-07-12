@@ -7,6 +7,7 @@ in the initial HTML response.
 """
 
 import logging
+import time
 import urllib.parse
 
 import requests
@@ -56,6 +57,7 @@ class StaticScraper:
                     results.append(job)
             except Exception as e:
                 logger.error(f"Error scraping job {link}: {e}", exc_info=True)
+            time.sleep(self.delay)
 
         return results
 
@@ -70,7 +72,7 @@ class StaticScraper:
             resp.raise_for_status()
             return resp.text
         except requests.RequestException as e:
-            logger.error(f"Failed to fetch {url}: {e}")
+            logger.error(f"Failed to fetch {url}: {e}", exc_info=True)
             return None
 
     def _extract_job_links(self, soup: BeautifulSoup, base_url: str) -> list[str]:
