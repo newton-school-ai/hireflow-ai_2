@@ -1,3 +1,9 @@
+"""Lever scraper for HireFlow AI.
+
+Uses Playwright to navigate and extract job postings from Lever career boards.
+Designed to handle Lever's specific DOM structure, dynamic loading, and pagination.
+"""
+
 import time
 import logging
 import argparse
@@ -8,8 +14,11 @@ from playwright.sync_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 
-from src.models.job import Job
-from src.config.database import SessionLocal
+from src.scrapers.scraper_utils import (
+    classify_listing_type,
+    save_job,
+    extract_company_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +37,7 @@ class LeverScraper:
             try:
                 self._scrape_board(page, company_name, board_url)
             except Exception as e:
-                logger.error(f"Error scraping {board_url}: {e}", exc_info=True)
+                logger.error(f"Error scraping {board_url}: {e}")
             finally:
                 browser.close()
 
@@ -36,7 +45,7 @@ class LeverScraper:
         try:
             page.goto(board_url, wait_until="domcontentloaded")
         except Exception as e:
-            logger.error(f"Failed to load board {board_url}: {e}", exc_info=True)
+            logger.error(f"Failed to load board {board_url}: {e}")
             return
 
         time.sleep(self.delay)
@@ -58,7 +67,7 @@ class LeverScraper:
                         if len(path_parts) >= 1:
                             job_links.add(abs_href)
             except Exception as e:
-                logger.error(f"Error extracting links: {e}", exc_info=True)
+                logger.error(f"Error extracting links: {e}")
 
             # Pagination check
             try:
@@ -87,23 +96,14 @@ class LeverScraper:
             try:
                 self._scrape_job(page, company_name, link)
             except Exception as e:
-                logger.error(f"Error scraping job {link}: {e}", exc_info=True)
+                logger.error(f"Error scraping job {link}: {e}")
             time.sleep(self.delay)
-
-    def _classify_listing_type(self, title: str) -> str:
-        title_lower = title.lower()
-        if any(
-            keyword in title_lower
-            for keyword in ["intern", "internship", "co-op", "coop"]
-        ):
-            return "internship"
-        return "job"
 
     def _scrape_job(self, page: Page, company_name: str, job_url: str):
         try:
             page.goto(job_url, wait_until="domcontentloaded")
         except Exception as e:
-            logger.error(f"Failed to load job {job_url}: {e}", exc_info=True)
+            logger.error(f"Failed to load job {job_url}: {e}")
             return
 
         try:
@@ -115,7 +115,7 @@ class LeverScraper:
         except PlaywrightTimeoutError:
             role_title = "Unknown Role"
         except Exception as e:
-            logger.error(f"Failed to extract title for {job_url}: {e}", exc_info=True)
+            logger.error(f"Failed to extract title for {job_url}: {e}")
             return
 
         try:
@@ -157,9 +157,10 @@ class LeverScraper:
         # in standard HTML elements on the public job posting page. We gracefully
         # store None.
 
-        listing_type = self._classify_listing_type(role_title)
+        listing_type = classify_listing_type(role_title)
 
-        self._save_job(
+        save_job(
+            source=self.source,
             company_name=company_name,
             role_title=role_title,
             jd_text=jd_text,
@@ -168,38 +169,6 @@ class LeverScraper:
             posting_date=None,
             listing_type=listing_type,
         )
-
-    def _save_job(
-        self,
-        company_name,
-        role_title,
-        jd_text,
-        location,
-        application_url,
-        posting_date,
-        listing_type,
-    ):
-        db = SessionLocal()
-        try:
-            existing = db.query(Job).filter_by(application_url=application_url).first()
-            if not existing:
-                job = Job(
-                    company_name=company_name,
-                    role_title=role_title,
-                    jd_text=jd_text,
-                    location=location,
-                    application_url=application_url,
-                    posting_date=posting_date,
-                    listing_type=listing_type,
-                    source=self.source,
-                )
-                db.add(job)
-                db.commit()
-        except Exception as e:
-            db.rollback()
-            logger.error(f"DB Error saving job {application_url}: {e}", exc_info=True)
-        finally:
-            db.close()
 
 
 if __name__ == "__main__":
@@ -210,13 +179,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    parsed_url = urllib.parse.urlparse(args.url)
-    path_segments = [seg for seg in parsed_url.path.split("/") if seg]
-
-    if path_segments:
-        company_name = path_segments[0]
-    else:
-        company_name = "unknown_company"
+    company_name = extract_company_name(args.url)
 
     logger.info(f"Starting Lever Scraper for {company_name} at {args.url}")
     scraper = LeverScraper()
