@@ -3,8 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.config.database import Base
 from src.models.job import Job
-from src.scrapers.lever_scraper import LeverScraper
-from src.scrapers.greenhouse_scraper import GreenhouseScraper
+from src.scrapers.scraper_utils import save_job
 
 # Set up SQLite test database
 TEST_DB_URL = "sqlite:///:memory:"
@@ -15,10 +14,10 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def test_lever_save_job_db():
     Base.metadata.create_all(bind=engine)
     try:
-        scraper = LeverScraper(delay=0)
         # Patch SessionLocal to return our in-memory SQLite session
-        with patch("src.scrapers.lever_scraper.SessionLocal", TestingSessionLocal):
-            scraper._save_job(
+        with patch("src.scrapers.scraper_utils.SessionLocal", TestingSessionLocal):
+            save_job(
+                source="lever",
                 company_name="TestCompany",
                 role_title="Software Engineer Intern",
                 jd_text="Description text",
@@ -52,10 +51,10 @@ def test_lever_save_job_db():
 def test_greenhouse_save_job_db():
     Base.metadata.create_all(bind=engine)
     try:
-        scraper = GreenhouseScraper(delay=0)
         # Patch SessionLocal to return our in-memory SQLite session
-        with patch("src.scrapers.greenhouse_scraper.SessionLocal", TestingSessionLocal):
-            scraper._save_job(
+        with patch("src.scrapers.scraper_utils.SessionLocal", TestingSessionLocal):
+            save_job(
+                source="greenhouse",
                 company_name="TestCompany",
                 role_title="Backend Developer",
                 jd_text="Description text",
