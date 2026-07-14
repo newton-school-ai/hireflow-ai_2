@@ -19,6 +19,7 @@ import logging
 import re
 
 from src.config.database import SessionLocal
+from src.config.settings import settings
 from src.models.job import Job
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-
-DEFAULT_THRESHOLD = 0.7
 
 MIN_JD_WORD_COUNT = 50
 
@@ -194,10 +193,11 @@ class SpamFilter:
         threshold: Confidence above which a job is classified as spam.
     """
 
-    def __init__(self, threshold: float = DEFAULT_THRESHOLD):
-        if not 0.0 <= threshold <= 1.0:
+    def __init__(self, threshold: float | None = None):
+        val = threshold if threshold is not None else settings.spam_threshold
+        if not 0.0 <= val <= 1.0:
             raise ValueError("threshold must be between 0 and 1")
-        self.threshold = threshold
+        self.threshold = val
 
     # ------------------------------------------------------------------
     # Public API
@@ -357,8 +357,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--threshold",
         type=float,
-        default=DEFAULT_THRESHOLD,
-        help=f"Spam confidence threshold (default: {DEFAULT_THRESHOLD}).",
+        default=None,
+        help="Spam confidence threshold (default: loaded from settings).",
     )
     args = parser.parse_args()
 

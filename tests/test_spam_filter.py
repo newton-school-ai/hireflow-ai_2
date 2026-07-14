@@ -5,6 +5,7 @@ from src.agents.spam_filter import (
     SpamFilter,
     detect_skills,
 )
+from src.config.settings import settings
 
 # ---------------------------------------------------------
 # SPAM CASES
@@ -114,6 +115,12 @@ def test_confidence_always_in_range():
 # ---------------------------------------------------------
 # THRESHOLD BEHAVIOR
 # ---------------------------------------------------------
+
+
+def test_default_threshold_uses_settings():
+    """SpamFilter without args should use settings.spam_threshold."""
+    sf = SpamFilter()
+    assert sf.threshold == settings.spam_threshold
 
 
 def test_custom_threshold():
