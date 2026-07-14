@@ -30,6 +30,7 @@ class Settings(BaseSettings):
 
     # LLM Settings
     llm_provider: str = "groq"
+    spam_threshold: float = 0.7
 
     # Groq
     groq_api_key: str | None = None
