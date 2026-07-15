@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     # Agent Settings
     spam_threshold: float = 0.7
+    embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
 
     # Groq
     groq_api_key: str | None = None
