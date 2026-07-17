@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     storage_backend: str = "local"
     local_storage_path: str = "./data"
 
+    # Embedding Settings
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+
     # Other API Keys
     tavily_api_key: str | None = None
     sendgrid_api_key: str | None = None
