@@ -28,9 +28,11 @@ class Settings(BaseSettings):
     allowed_origins: str = "http://localhost:3000"
     database_url: str = "postgresql://postgres:password@localhost:5432/hireflow"
 
-    # LLM Settings
+    # LLM & Embedding Settings
     llm_provider: str = "groq"
     spam_threshold: float = 0.7
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    faiss_index_dir: str = "data/faiss_index"
 
     # Groq
     groq_api_key: str | None = None
