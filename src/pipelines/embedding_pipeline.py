@@ -1,6 +1,7 @@
 import os
 import json
 import argparse
+import logging
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -8,12 +9,14 @@ from src.config.settings import settings
 from src.config.database import SessionLocal
 from src.models.job import Job
 
+logger = logging.getLogger(__name__)
+
 
 class EmbeddingPipeline:
     def __init__(self, index_dir="data/faiss_index"):
         self.model_name = settings.embedding_model
         # Use sentence-transformers
-        self.model = SentenceTransformer(self.model_name)
+        self._model = None
         self.index_dir = index_dir
         self.index_path = os.path.join(self.index_dir, "index.faiss")
         self.metadata_path = os.path.join(self.index_dir, "metadata.json")
@@ -24,6 +27,12 @@ class EmbeddingPipeline:
         self.metadata = {}
 
         self._load_index()
+
+    @property
+    def model(self):
+        if self._model is None:
+            self._model = SentenceTransformer(self.model_name)
+        return self._model
 
     def _load_index(self):
         if os.path.exists(self.index_path) and os.path.exists(self.metadata_path):
@@ -49,7 +58,7 @@ class EmbeddingPipeline:
             jobs = db.query(Job).filter(Job.is_spam == False).all()  # noqa: E712
 
             if not jobs:
-                print("No jobs found to index.")
+                logger.info("No jobs found to index.")
                 # We should still create an empty index just in case
                 dimension = self.model.get_sentence_embedding_dimension()
                 self.index = faiss.IndexFlatIP(dimension)
@@ -69,12 +78,12 @@ class EmbeddingPipeline:
                 texts.append(text_to_embed)
 
                 self.metadata[i] = {
-                    "id": str(job.id),
+                    "job_id": str(job.id),
                     "role_title": job.role_title,
                     "company_name": job.company_name,
                 }
 
-            print(f"Generating embeddings for {len(texts)} jobs...")
+            logger.info(f"Generating embeddings for {len(texts)} jobs...")
             embeddings = self.model.encode(
                 texts, convert_to_numpy=True, normalize_embeddings=True
             )
@@ -89,7 +98,7 @@ class EmbeddingPipeline:
             with open(self.metadata_path, "w") as f:
                 json.dump(self.metadata, f)
 
-            print(f"Successfully saved FAISS index to {self.index_dir}")
+            logger.info(f"Successfully saved FAISS index to {self.index_dir}")
         finally:
             db.close()
 
@@ -114,9 +123,10 @@ class EmbeddingPipeline:
         for i, idx in enumerate(indices[0]):
             if idx != -1 and idx in self.metadata:
                 meta = self.metadata[idx]
+                job_id = meta.get("job_id", meta.get("id"))
                 results.append(
                     {
-                        "id": meta["id"],
+                        "job_id": job_id,
                         "role_title": meta["role_title"],
                         "company_name": meta["company_name"],
                         "score": float(scores[0][i]),
