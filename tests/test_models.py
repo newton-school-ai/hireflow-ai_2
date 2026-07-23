@@ -109,9 +109,9 @@ class TestTableExistence:
         """All 5 core tables should be present."""
         inspector = inspect(engine)
         actual_tables = set(inspector.get_table_names())
-        assert self.EXPECTED_TABLES.issubset(actual_tables), (
-            f"Missing tables: {self.EXPECTED_TABLES - actual_tables}"
-        )
+        assert self.EXPECTED_TABLES.issubset(
+            actual_tables
+        ), f"Missing tables: {self.EXPECTED_TABLES - actual_tables}"
 
 
 # ===========================================================================
@@ -137,9 +137,9 @@ class TestUsersColumns:
     def test_users_columns(self, engine):
         inspector = inspect(engine)
         actual = {col["name"] for col in inspector.get_columns("users")}
-        assert self.EXPECTED_COLUMNS.issubset(actual), (
-            f"Missing columns in users: {self.EXPECTED_COLUMNS - actual}"
-        )
+        assert self.EXPECTED_COLUMNS.issubset(
+            actual
+        ), f"Missing columns in users: {self.EXPECTED_COLUMNS - actual}"
 
 
 class TestJobsColumns:
@@ -170,9 +170,9 @@ class TestJobsColumns:
     def test_jobs_columns(self, engine):
         inspector = inspect(engine)
         actual = {col["name"] for col in inspector.get_columns("jobs")}
-        assert self.EXPECTED_COLUMNS.issubset(actual), (
-            f"Missing columns in jobs: {self.EXPECTED_COLUMNS - actual}"
-        )
+        assert self.EXPECTED_COLUMNS.issubset(
+            actual
+        ), f"Missing columns in jobs: {self.EXPECTED_COLUMNS - actual}"
 
     def test_removed_columns_absent(self, engine):
         """Old column names should no longer exist."""
@@ -202,9 +202,9 @@ class TestApplicationsColumns:
     def test_applications_columns(self, engine):
         inspector = inspect(engine)
         actual = {col["name"] for col in inspector.get_columns("applications")}
-        assert self.EXPECTED_COLUMNS.issubset(actual), (
-            f"Missing columns in applications: {self.EXPECTED_COLUMNS - actual}"
-        )
+        assert self.EXPECTED_COLUMNS.issubset(
+            actual
+        ), f"Missing columns in applications: {self.EXPECTED_COLUMNS - actual}"
 
 
 class TestPrepGuidesColumns:
@@ -225,9 +225,9 @@ class TestPrepGuidesColumns:
     def test_prep_guides_columns(self, engine):
         inspector = inspect(engine)
         actual = {col["name"] for col in inspector.get_columns("prep_guides")}
-        assert self.EXPECTED_COLUMNS.issubset(actual), (
-            f"Missing columns in prep_guides: {self.EXPECTED_COLUMNS - actual}"
-        )
+        assert self.EXPECTED_COLUMNS.issubset(
+            actual
+        ), f"Missing columns in prep_guides: {self.EXPECTED_COLUMNS - actual}"
 
 
 class TestWeeklyReportsColumns:
@@ -249,9 +249,9 @@ class TestWeeklyReportsColumns:
     def test_weekly_reports_columns(self, engine):
         inspector = inspect(engine)
         actual = {col["name"] for col in inspector.get_columns("weekly_reports")}
-        assert self.EXPECTED_COLUMNS.issubset(actual), (
-            f"Missing columns in weekly_reports: {self.EXPECTED_COLUMNS - actual}"
-        )
+        assert self.EXPECTED_COLUMNS.issubset(
+            actual
+        ), f"Missing columns in weekly_reports: {self.EXPECTED_COLUMNS - actual}"
 
 
 # ===========================================================================
