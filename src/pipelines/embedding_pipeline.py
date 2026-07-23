@@ -294,11 +294,9 @@ class EmbeddingPipeline:
         Returns:
             List of dicts representing search matches. Each dict contains:
             - job_id: str
-            - id: str (alias for job_id)
             - role_title: str
             - company_name: str
             - score: float (similarity score)
-            - similarity_score: float (alias for score)
         """
         if text is None or not text.strip():
             logger.warning("Empty search text provided. Returning empty result list.")
@@ -347,11 +345,9 @@ class EmbeddingPipeline:
                     results.append(
                         {
                             "job_id": meta["id"],
-                            "id": meta["id"],
                             "role_title": meta["role_title"],
                             "company_name": meta["company_name"],
                             "score": float(score),
-                            "similarity_score": float(score),
                         }
                     )
 

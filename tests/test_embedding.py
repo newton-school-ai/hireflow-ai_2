@@ -214,11 +214,9 @@ def test_faiss_search_and_similarity(mock_transformer, db_session):
     assert len(results) <= 2
     for r in results:
         assert "job_id" in r
-        assert "id" in r
         assert "role_title" in r
         assert "company_name" in r
         assert "score" in r
-        assert "similarity_score" in r
         assert isinstance(r["score"], float)
         assert isinstance(r["role_title"], str)
         assert isinstance(r["company_name"], str)

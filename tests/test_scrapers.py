@@ -260,10 +260,10 @@ def test_generic_sequential_detection_static_first():
         mock_instance = mock_static.return_value
         mock_instance.scrape.return_value = mock_jobs
 
-        with patch.object(scraper, "_scrape_dynamic") as mock_dynamic, patch.object(
-            scraper, "_save_jobs"
+        with (
+            patch.object(scraper, "_scrape_dynamic") as mock_dynamic,
+            patch.object(scraper, "_save_jobs"),
         ):
-
             jobs = scraper.scrape("http://fake.com/careers")
 
             # Static scraper should be called
@@ -292,10 +292,10 @@ def test_generic_sequential_detection_dynamic_fallback():
         # Static returns no jobs
         mock_instance.scrape.return_value = []
 
-        with patch.object(scraper, "_scrape_dynamic") as mock_dynamic, patch.object(
-            scraper, "_save_jobs"
+        with (
+            patch.object(scraper, "_scrape_dynamic") as mock_dynamic,
+            patch.object(scraper, "_save_jobs"),
         ):
-
             # Dynamic returns jobs
             mock_dynamic.return_value = mock_jobs
 
