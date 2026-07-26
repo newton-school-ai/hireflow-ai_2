@@ -11,7 +11,7 @@ import json
 import logging
 import re
 import uuid
-from typing import Any, Dict, List, Set
+from typing import Any
 
 import numpy as np
 from sqlalchemy.orm import Session
@@ -33,12 +33,12 @@ WEIGHT_COMPANY_SIGNAL: float = 0.05
 
 
 def extract_skill_gaps(
-    user_skills: List[str] | None, jd_skills: List[str] | None
-) -> List[str]:
-    """Identifies skills required by the job description that are missing from user profile.
+    user_skills: list[str] | None, jd_skills: list[str] | None
+) -> list[str]:
+    """Identifies skills required by JD that are missing from user profile.
 
-    Deduplicates skills while preserving the order of appearance in the job description.
-    Performs case-insensitive comparisons and handles missing or malformed inputs gracefully.
+    Deduplicates skills while preserving order of appearance in JD.
+    Performs case-insensitive comparisons and handles missing data gracefully.
 
     Args:
         user_skills: List of skills possessed by the user.
@@ -51,7 +51,7 @@ def extract_skill_gaps(
         return []
 
     if user_skills is None or not isinstance(user_skills, list):
-        user_skills_set: Set[str] = set()
+        user_skills_set: set[str] = set()
     else:
         user_skills_set = {
             str(s).strip().lower()
@@ -59,8 +59,8 @@ def extract_skill_gaps(
             if s is not None and str(s).strip()
         }
 
-    gaps: List[str] = []
-    seen_gaps_lower: Set[str] = set()
+    gaps: list[str] = []
+    seen_gaps_lower: set[str] = set()
 
     for skill in jd_skills:
         if skill is None:
@@ -77,16 +77,16 @@ def extract_skill_gaps(
 
 
 def calculate_skill_score(
-    user_skills: List[str] | None, jd_skills: List[str] | None
+    user_skills: list[str] | None, jd_skills: list[str] | None
 ) -> float:
-    """Calculates skill match ratio (0.0 to 1.0) between user skills and job requirements.
+    """Calculates skill match ratio (0.0 to 1.0) between user and job skills.
 
     Args:
         user_skills: List of skills possessed by the user.
         jd_skills: List of skills required by the job description.
 
     Returns:
-        Float score between 0.0 and 1.0. If no skills are required by the JD, returns 1.0.
+        Float score between 0.0 and 1.0. Returns 1.0 if no skills required.
     """
     if not jd_skills or not isinstance(jd_skills, list):
         return 1.0
@@ -109,16 +109,16 @@ def calculate_skill_score(
 
 
 def calculate_role_score(
-    target_roles: List[str] | str | None,
+    target_roles: list[str] | str | None,
     role_title: str | None,
     embedding_similarity: float | None = None,
 ) -> float:
-    """Calculates role fit score combining title text matching and semantic embedding similarity.
+    """Calculates role fit score combining title matching and embedding similarity.
 
     Args:
         target_roles: Target roles specified by user (list or string).
         role_title: Role title from job posting.
-        embedding_similarity: Optional pre-computed embedding similarity score (0.0 to 1.0).
+        embedding_similarity: Optional embedding similarity score (0.0 to 1.0).
 
     Returns:
         Float score between 0.0 and 1.0.
@@ -126,7 +126,7 @@ def calculate_role_score(
     title_fit = 0.0
     if role_title and isinstance(role_title, str) and role_title.strip():
         role_clean = role_title.strip().lower()
-        roles_list: List[str] = []
+        roles_list: list[str] = []
         if isinstance(target_roles, list):
             roles_list = [
                 str(r).strip().lower()
@@ -166,7 +166,7 @@ def calculate_role_score(
 
 
 def _extract_user_years(user_exp: Any) -> float:
-    """Helper to extract total years of experience from various user profile formats."""
+    """Helper to extract total experience years from various profile formats."""
     if user_exp is None:
         return 0.0
 
@@ -204,7 +204,7 @@ def _extract_user_years(user_exp: Any) -> float:
 
 
 def _parse_job_experience_req(job_exp_req: Any) -> float | None:
-    """Helper to parse minimum required experience years from job requirements string."""
+    """Helper to parse required experience years from job requirements string."""
     if job_exp_req is None:
         return None
 
@@ -233,7 +233,7 @@ def _parse_job_experience_req(job_exp_req: Any) -> float | None:
 
 
 def calculate_experience_score(user_exp: Any, job_exp_req: Any) -> float:
-    """Calculates experience fit score (0.0 to 1.0) based on user and job requirements.
+    """Calculates experience fit score (0.0 to 1.0).
 
     Args:
         user_exp: User experience data (list, int, float, or str).
@@ -254,7 +254,7 @@ def calculate_experience_score(user_exp: Any, job_exp_req: Any) -> float:
 
 
 def calculate_location_score(
-    user_locations: List[str] | str | None, job_location: str | None
+    user_locations: list[str] | str | None, job_location: str | None
 ) -> float:
     """Calculates location match score (0.0 to 1.0).
 
@@ -263,7 +263,7 @@ def calculate_location_score(
         job_location: Job location string.
 
     Returns:
-        Float score: 1.0 for match or remote flexibility, 0.5 for unspecified job location, 0.0 for mismatch.
+        Float score: 1.0 for match, 0.5 for unspecified, 0.0 for mismatch.
     """
     if not user_locations:
         return 1.0
@@ -276,7 +276,7 @@ def calculate_location_score(
         return 0.5
 
     job_loc_clean = job_location.strip().lower()
-    user_locs: List[str] = []
+    user_locs: list[str] = []
 
     if isinstance(user_locations, list):
         user_locs = [
@@ -323,7 +323,7 @@ def _parse_compensation(value: Any) -> float | None:
     if not matches:
         return None
 
-    values: List[float] = []
+    values: list[float] = []
     for num_str, k_suffix in matches:
         num = float(num_str)
         if k_suffix == "k":
@@ -339,10 +339,10 @@ def _parse_compensation(value: Any) -> float | None:
 def calculate_compensation_score(
     user_min_comp: Any, job_comp_str: Any, mode: str = "job"
 ) -> float:
-    """Calculates compensation score (0.0 to 1.0) comparing user expectation to job offering.
+    """Calculates compensation score (0.0 to 1.0) comparing target to offering.
 
     Args:
-        user_min_comp: User's minimum required stipend (internship) or salary (job).
+        user_min_comp: Minimum stipend (internship) or salary (job).
         job_comp_str: Job compensation text or numeric amount.
         mode: Candidate mode ('internship' or 'job').
 
@@ -373,7 +373,7 @@ def calculate_company_signal(
         job_source: ATS source (e.g. 'lever', 'greenhouse').
 
     Returns:
-        Float score: 1.0 for top ATS source, 0.8 for valid company name, 0.0 if missing.
+        Float score: 1.0 for top ATS source, 0.8 for valid name, 0.0 if missing.
     """
     if (
         not company_name
@@ -404,13 +404,8 @@ def compute_final_score(
 ) -> float:
     """Calculates composite match score normalized between 0.0 and 1.0.
 
-    Weights:
-        Skill Match: 40%
-        Role Fit: 20%
-        Experience Fit: 15%
-        Location Match: 10%
-        Compensation Fit: 10%
-        Company Signal: 5%
+    Weights: Skill (40%), Role (20%), Experience (15%), Location (10%),
+             Compensation (10%), Company Signal (5%).
     """
     total = (
         WEIGHT_SKILL * skill_score
@@ -425,19 +420,19 @@ def compute_final_score(
 
 
 def score_job(
-    user: User | Dict[str, Any],
+    user: User | dict[str, Any],
     job: Job,
     embedding_pipeline: Any = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Scores a single Job model against a User model or profile dict.
 
     Args:
-        user: SQLAlchemy User instance or user profile dictionary.
-        job: SQLAlchemy Job instance.
-        embedding_pipeline: Optional EmbeddingPipeline instance for semantic similarity.
+        user: User instance or profile dict.
+        job: Job instance.
+        embedding_pipeline: Optional EmbeddingPipeline instance.
 
     Returns:
-        Dictionary containing job_id, user_id, match_score, skill_matches, skill_gaps, and sub_scores.
+        Dict with job_id, user_id, match_score, skill_matches, skill_gaps, sub_scores.
     """
     if isinstance(user, User):
         user_id = user.id
@@ -474,13 +469,19 @@ def score_job(
         try:
             profile_summary_parts = []
             if target_roles:
-                profile_summary_parts.append(
-                    f"Roles: {', '.join(target_roles) if isinstance(target_roles, list) else target_roles}"
+                roles_str = (
+                    ", ".join(target_roles)
+                    if isinstance(target_roles, list)
+                    else str(target_roles)
                 )
+                profile_summary_parts.append(f"Roles: {roles_str}")
             if user_skills:
-                profile_summary_parts.append(
-                    f"Skills: {', '.join(user_skills) if isinstance(user_skills, list) else user_skills}"
+                skills_str = (
+                    ", ".join(user_skills)
+                    if isinstance(user_skills, list)
+                    else str(user_skills)
                 )
+                profile_summary_parts.append(f"Skills: {skills_str}")
 
             profile_text = "\n".join(profile_summary_parts)
             if profile_text.strip():
@@ -553,8 +554,8 @@ def score_all_jobs(
     save_to_db: bool = True,
     dry_run: bool = False,
     embedding_pipeline: Any = None,
-) -> List[Dict[str, Any]]:
-    """Scores all non-spam jobs for a target user profile and optionally saves applications.
+) -> list[dict[str, Any]]:
+    """Scores non-spam jobs for a target user and saves applications.
 
     Args:
         user_id: User UUID or string identifier.
@@ -564,7 +565,7 @@ def score_all_jobs(
         embedding_pipeline: Optional EmbeddingPipeline instance.
 
     Returns:
-        List of score result dicts sorted deterministically by match_score DESC, job_id ASC.
+        List of score dicts sorted deterministically by match_score DESC, job_id ASC.
     """
     if isinstance(user_id, str):
         try:
@@ -580,7 +581,7 @@ def score_all_jobs(
 
     jobs = db.query(Job).filter(Job.is_spam == False).all()  # noqa: E712
 
-    results: List[Dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
     for job in jobs:
         res = score_job(user=user, job=job, embedding_pipeline=embedding_pipeline)
         results.append(res)

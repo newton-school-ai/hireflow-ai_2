@@ -1,18 +1,19 @@
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from playwright.sync_api import sync_playwright
 
-from src.scrapers.lever_scraper import LeverScraper
-from src.scrapers.greenhouse_scraper import GreenhouseScraper
 from src.scrapers.generic_scraper import GenericScraper
+from src.scrapers.greenhouse_scraper import GreenhouseScraper
+from src.scrapers.lever_scraper import LeverScraper
 from src.scrapers.static_scraper import StaticScraper
 
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
 
 
 def read_fixture(filename: str) -> str:
-    with open(os.path.join(FIXTURES_DIR, filename), "r", encoding="utf-8") as f:
+    with open(os.path.join(FIXTURES_DIR, filename), encoding="utf-8") as f:
         return f.read()
 
 

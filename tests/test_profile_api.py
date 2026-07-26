@@ -4,11 +4,12 @@ Unit and integration tests for the Profile and Onboarding API.
 
 import io
 import uuid
+from unittest.mock import MagicMock, patch
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from unittest.mock import MagicMock, patch
 
 from src.api.main import app
 from src.config.database import Base, get_db

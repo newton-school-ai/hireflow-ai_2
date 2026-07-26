@@ -11,7 +11,7 @@ import json
 import logging
 import os
 import uuid
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import faiss
 import numpy as np
@@ -23,7 +23,7 @@ from src.config.settings import settings
 logger = logging.getLogger(__name__)
 
 # Module-level model cache to reuse the singleton model instance
-_model_cache: Dict[str, Any] = {}
+_model_cache: dict[str, Any] = {}
 
 
 def get_embedding_model(model_name: str) -> Any:
@@ -66,7 +66,7 @@ class EmbeddingPipeline:
         self.model_name = model_name or settings.embedding_model
         self.index_dir = index_dir or settings.faiss_index_dir
         self.index: faiss.IndexFlatIP | None = None
-        self.job_metadata: List[Dict[str, Any]] = []
+        self.job_metadata: list[dict[str, Any]] = []
 
     @property
     def model(self) -> Any:
@@ -116,7 +116,7 @@ class EmbeddingPipeline:
 
     def embed_jobs(
         self, db: Session | None = None
-    ) -> Tuple[List[uuid.UUID], np.ndarray | None]:
+    ) -> tuple[list[uuid.UUID], np.ndarray | None]:
         """Queries non-spam, non-empty jobs from the database and generates embeddings.
 
         Args:
@@ -271,7 +271,7 @@ class EmbeddingPipeline:
         try:
             self.index = faiss.read_index(index_path)
 
-            with open(meta_path, "r", encoding="utf-8") as f:
+            with open(meta_path, encoding="utf-8") as f:
                 self.job_metadata = json.load(f)
 
             logger.info(
@@ -284,7 +284,7 @@ class EmbeddingPipeline:
             self.job_metadata = []
             return False
 
-    def search(self, text: str | None, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(self, text: str | None, top_k: int = 5) -> list[dict[str, Any]]:
         """Searches the index for the top_k most similar jobs to the given query text.
 
         Args:

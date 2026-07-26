@@ -1,6 +1,8 @@
 from unittest.mock import patch
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from src.config.database import Base
 from src.models.job import Job
 from src.scrapers.scraper_utils import save_job

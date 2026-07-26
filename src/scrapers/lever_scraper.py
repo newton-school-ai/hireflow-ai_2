@@ -4,20 +4,23 @@ Uses Playwright to navigate and extract job postings from Lever career boards.
 Designed to handle Lever's specific DOM structure, dynamic loading, and pagination.
 """
 
-import time
-import logging
 import argparse
+import logging
+import time
 import urllib.parse
+
 from playwright.sync_api import (
-    sync_playwright,
     Page,
+    sync_playwright,
+)
+from playwright.sync_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 
 from src.scrapers.scraper_utils import (
     classify_listing_type,
-    save_job,
     extract_company_name,
+    save_job,
 )
 
 logger = logging.getLogger(__name__)

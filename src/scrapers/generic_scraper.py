@@ -14,23 +14,25 @@ Usage::
     jobs = scraper.scrape("https://example.com/careers")
 """
 
-import logging
 import argparse
+import logging
 import time
 import urllib.parse
 
 from playwright.sync_api import (
-    sync_playwright,
     TimeoutError as PlaywrightTimeoutError,
 )
+from playwright.sync_api import (
+    sync_playwright,
+)
 
-from src.scrapers.static_scraper import StaticScraper
 from src.scrapers.scraper_utils import (
     classify_listing_type,
-    save_job,
     extract_company_name,
     is_job_path,
+    save_job,
 )
+from src.scrapers.static_scraper import StaticScraper
 
 logger = logging.getLogger(__name__)
 

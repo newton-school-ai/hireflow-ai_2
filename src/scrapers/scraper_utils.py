@@ -7,8 +7,8 @@ so that it is defined once rather than duplicated in every module.
 import logging
 import urllib.parse
 
-from src.models.job import Job
 from src.config.database import SessionLocal
+from src.models.job import Job
 
 logger = logging.getLogger(__name__)
 

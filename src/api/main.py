@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+
 from src.api.routes.profile import router as profile_router
 
 app = FastAPI(title="HireFlow API")

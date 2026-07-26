@@ -5,10 +5,11 @@ API routes for user profile and onboarding in HireFlow AI.
 import io
 import re
 import uuid
+
+import pypdf
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel, EmailStr, Field, ValidationError
 from sqlalchemy.orm import Session
-import pypdf
 
 from src.config.database import get_db
 from src.models.user import User
