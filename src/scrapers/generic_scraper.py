@@ -110,7 +110,7 @@ class GenericScraper:
 
                 try:
                     page.goto(url, wait_until="networkidle", timeout=15000)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     logger.error(
                         f"Failed to load dynamic page {url}: {e}", exc_info=True
                     )
@@ -130,14 +130,14 @@ class GenericScraper:
                         job = self._scrape_dynamic_job(page, link, url)
                         if job:
                             results.append(job)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.error(
                             f"Error scraping dynamic job {link}: {e}", exc_info=True
                         )
                     time.sleep(self.delay)
 
                 browser.close()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Playwright error: {e}", exc_info=True)
 
         return results
@@ -163,7 +163,7 @@ class GenericScraper:
                 if abs_url not in seen:
                     seen.add(abs_url)
                     links.append(abs_url)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
 
         return links
@@ -172,7 +172,7 @@ class GenericScraper:
         """Navigate to a single job page and extract data with Playwright."""
         try:
             page.goto(job_url, wait_until="domcontentloaded", timeout=10000)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load job {job_url}: {e}", exc_info=True)
             return None
 
@@ -185,7 +185,7 @@ class GenericScraper:
                 role_title = page.locator("h2").first.inner_text(timeout=2000).strip()
         except PlaywrightTimeoutError:
             role_title = "Unknown Role"
-        except Exception:
+        except Exception:  # noqa: BLE001
             role_title = "Unknown Role"
 
         if not role_title:
@@ -198,7 +198,7 @@ class GenericScraper:
                 location = loc_locator.inner_text().strip() or None
             else:
                 location = None
-        except Exception:
+        except Exception:  # noqa: BLE001
             location = None
 
         # Description
@@ -210,7 +210,7 @@ class GenericScraper:
                 jd_text = desc_locator.inner_text().strip()
             else:
                 jd_text = page.locator("body").inner_text().strip()
-        except Exception:
+        except Exception:  # noqa: BLE001
             jd_text = "Description not found."
 
         listing_type = classify_listing_type(role_title)

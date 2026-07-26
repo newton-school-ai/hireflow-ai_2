@@ -41,7 +41,7 @@ def get_embedding_model(model_name: str) -> Any:
             from sentence_transformers import SentenceTransformer
 
             _model_cache[model_name] = SentenceTransformer(model_name)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(
                 f"Failed to load sentence-transformers model '{model_name}': {e}"
             )
@@ -95,7 +95,7 @@ class EmbeddingPipeline:
             # sentence-transformers' encode supports returning L2-normalized embeddings
             embedding = self.model.encode(cleaned, normalize_embeddings=True)
             return np.array(embedding, dtype=np.float32)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to embed text: {e}")
             raise RuntimeError(f"Embedding generation failure: {e}") from e
 
@@ -159,7 +159,7 @@ class EmbeddingPipeline:
 
             return job_ids, embeddings_matrix
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to embed jobs from database: {e}")
             raise RuntimeError(f"Database job embedding failure: {e}") from e
         finally:
@@ -215,7 +215,7 @@ class EmbeddingPipeline:
 
             logger.info(f"Successfully built FAISS index with {len(job_ids)} vectors.")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to build FAISS index: {e}")
             raise RuntimeError(f"FAISS index build failure: {e}") from e
         finally:
@@ -247,7 +247,7 @@ class EmbeddingPipeline:
                 json.dump(self.job_metadata, f, ensure_ascii=False, indent=2)
 
             logger.info(f"Saved FAISS index and metadata successfully to {target_dir}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to save FAISS index: {e}")
             raise RuntimeError(f"FAISS index save failure: {e}") from e
 
@@ -278,7 +278,7 @@ class EmbeddingPipeline:
                 f"Loaded FAISS index with {self.index.ntotal} vectors from {target_dir}"
             )
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load FAISS index from {target_dir}: {e}")
             self.index = None
             self.job_metadata = []
@@ -352,7 +352,7 @@ class EmbeddingPipeline:
                     )
 
             return results
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error occurred during FAISS index search: {e}")
             return []
 

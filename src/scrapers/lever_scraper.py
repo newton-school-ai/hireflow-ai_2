@@ -39,7 +39,7 @@ class LeverScraper:
 
             try:
                 self._scrape_board(page, company_name, board_url)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error scraping {board_url}: {e}")
             finally:
                 browser.close()
@@ -47,7 +47,7 @@ class LeverScraper:
     def _scrape_board(self, page: Page, company_name: str, board_url: str):
         try:
             page.goto(board_url, wait_until="domcontentloaded")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load board {board_url}: {e}")
             return
 
@@ -69,7 +69,7 @@ class LeverScraper:
                         path_parts = [p for p in parsed.path.split("/") if p]
                         if len(path_parts) >= 1:
                             job_links.add(abs_href)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error extracting links: {e}")
 
             # Pagination check
@@ -84,7 +84,7 @@ class LeverScraper:
                     time.sleep(self.delay)
                 else:
                     break
-            except Exception:
+            except Exception:  # noqa: BLE001
                 break
 
             # Infinite loop protection
@@ -99,14 +99,14 @@ class LeverScraper:
         for link in job_links:
             try:
                 self._scrape_job(page, company_name, link)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error scraping job {link}: {e}")
             time.sleep(self.delay)
 
     def _scrape_job(self, page: Page, company_name: str, job_url: str):
         try:
             page.goto(job_url, wait_until="domcontentloaded")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load job {job_url}: {e}")
             return
 
@@ -118,7 +118,7 @@ class LeverScraper:
                 role_title = page.locator("h1").first.inner_text(timeout=2000).strip()
         except PlaywrightTimeoutError:
             role_title = "Unknown Role"
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to extract title for {job_url}: {e}")
             return
 
@@ -130,7 +130,7 @@ class LeverScraper:
                 location = loc_locator.inner_text().strip()
             else:
                 location = None
-        except Exception:
+        except Exception:  # noqa: BLE001
             location = None
 
         try:
@@ -151,10 +151,10 @@ class LeverScraper:
                         .first.inner_text()
                         .strip()
                     )
-                except Exception:
+                except Exception:  # noqa: BLE001
                     page.wait_for_selector("body", timeout=2000)
                     jd_text = page.locator("body").inner_text().strip()
-        except Exception:
+        except Exception:  # noqa: BLE001
             jd_text = "Description not found."
 
         # Note on posting_date: Lever does not natively expose the posting date

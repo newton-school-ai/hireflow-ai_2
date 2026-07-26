@@ -42,7 +42,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
     if "application/json" in content_type:
         try:
             body = await request.json()
-        except Exception:
+        except Exception:  # noqa: BLE001
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid JSON payload",
@@ -123,7 +123,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
                     parsed = json.loads(val_str)
                     if isinstance(parsed, list):
                         return [str(v).strip() for v in parsed]
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             return [v.strip() for v in val_str.split(",") if v.strip()]
 
@@ -166,7 +166,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n"
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Failed to parse PDF resume: {e}",
@@ -199,7 +199,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="LLM failed to return structured JSON data",
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"LLM extraction failed: {e}",

@@ -39,7 +39,7 @@ class GreenhouseScraper:
 
             try:
                 self._scrape_board(page, company_name, board_url)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error scraping {board_url}: {e}")
             finally:
                 browser.close()
@@ -47,7 +47,7 @@ class GreenhouseScraper:
     def _scrape_board(self, page: Page, company_name: str, board_url: str):
         try:
             page.goto(board_url, wait_until="domcontentloaded")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load board {board_url}: {e}")
             return
 
@@ -85,11 +85,11 @@ class GreenhouseScraper:
                                 "greenhouse.io" in abs_href or "jobs" in abs_href
                             ) and len(path_parts) >= 2:
                                 job_links.add(abs_href)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.error(f"Error extracting links: {e}")
             except RuntimeError:
                 raise
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error extracting links: {e}")
 
             # Pagination check
@@ -106,7 +106,7 @@ class GreenhouseScraper:
                     time.sleep(self.delay)
                 else:
                     break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Pagination stopped: {e}")
                 break
 
@@ -120,7 +120,7 @@ class GreenhouseScraper:
         for link in job_links:
             try:
                 self._scrape_job(page, company_name, link)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error scraping job {link}: {e}")
             time.sleep(self.delay)
 
@@ -132,7 +132,7 @@ class GreenhouseScraper:
                 page.wait_for_selector("#content, .job__description", timeout=3000)
             except PlaywrightTimeoutError:
                 pass
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load job {job_url}: {e}")
             return
 
@@ -144,7 +144,7 @@ class GreenhouseScraper:
                 role_title = page.locator("h1").first.inner_text(timeout=2000).strip()
         except PlaywrightTimeoutError:
             role_title = "Unknown Role"
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to extract title for {job_url}: {e}")
             return
 
@@ -154,7 +154,7 @@ class GreenhouseScraper:
                 location = loc_locator.inner_text().strip()
             else:
                 location = None
-        except Exception:
+        except Exception:  # noqa: BLE001
             location = None
 
         try:
@@ -165,9 +165,9 @@ class GreenhouseScraper:
                 try:
                     page.wait_for_selector("body", timeout=1000)
                     jd_text = page.locator("body").inner_text().strip()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     jd_text = "Description not found."
-        except Exception:
+        except Exception:  # noqa: BLE001
             jd_text = "Description not found."
 
         # Note on posting_date: Greenhouse does not natively expose the posting date

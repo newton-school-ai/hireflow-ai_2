@@ -496,7 +496,7 @@ def score_job(
                 if u_emb is not None and j_emb is not None:
                     sim = float(np.dot(u_emb, j_emb))
                     embedding_similarity = max(0.0, min(1.0, sim))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Error computing embedding similarity: {e}")
             embedding_similarity = None
 
@@ -666,7 +666,7 @@ if __name__ == "__main__":
         ]
 
         print(json.dumps(formatted_results, indent=2))
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.error(f"Error during match scorer CLI execution: {exc}")
         raise
     finally:
