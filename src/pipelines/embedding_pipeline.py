@@ -80,7 +80,7 @@ class EmbeddingPipeline:
             text: The input text to embed.
 
         Returns:
-            A normalized 1D numpy array of shape (dimension,) or None if text is empty/None.
+            A normalized 1D numpy array of shape (dimension,) or None.
         """
         if text is None:
             logger.warning("Received None input for embedding.")
@@ -108,7 +108,7 @@ class EmbeddingPipeline:
         Returns:
             A combined string of role title, company name, and job description.
         """
-        # Ensure role_title and company_name are strings to prevent None concatenation issues
+        # Ensure role_title & company_name are strings to prevent None issues
         role = job.role_title or ""
         company = job.company_name or ""
         jd = job.jd_text or ""
@@ -120,10 +120,10 @@ class EmbeddingPipeline:
         """Queries non-spam, non-empty jobs from the database and generates embeddings.
 
         Args:
-            db: Optional SQLAlchemy Session. If not provided, a new one will be opened and closed.
+            db: Optional Session. If not provided, a new session is opened/closed.
 
         Returns:
-            A tuple of (list of job UUIDs, 2D float32 numpy array of shape (num_jobs, dimension) or None).
+            Tuple of (list of job UUIDs, 2D float32 numpy array or None).
         """
         db_provided = db is not None
         session = db or SessionLocal()
@@ -193,8 +193,8 @@ class EmbeddingPipeline:
 
             self.index = index
 
-            # Store mapping metadata of the index positions
-            # We fetch role_title and company_name directly to avoid database queries during search
+            # Store mapping metadata of index positions
+            # Fetch role_title & company_name directly to avoid search queries
             from src.models.job import Job
 
             jobs_map = {
@@ -226,7 +226,7 @@ class EmbeddingPipeline:
         """Saves the current FAISS index and metadata mapping to disk.
 
         Args:
-            directory: Optional custom path to save index files. Defaults to configured directory.
+            directory: Optional custom path to save index files.
         """
         target_dir = directory or self.index_dir
 
@@ -255,10 +255,10 @@ class EmbeddingPipeline:
         """Loads a FAISS index and metadata mapping from disk if present.
 
         Args:
-            directory: Optional custom path to load index files from. Defaults to configured directory.
+            directory: Optional custom path to load index files from.
 
         Returns:
-            True if loaded successfully, False if files are missing or could not be loaded.
+            True if loaded successfully, False otherwise.
         """
         target_dir = directory or self.index_dir
         index_path = os.path.join(target_dir, "index.faiss")
@@ -365,12 +365,12 @@ if __name__ == "__main__":
     )
 
     parser = argparse.ArgumentParser(
-        description="HireFlow AI CLI tool to build and update the FAISS embedding index."
+        description="HireFlow AI CLI tool to build/update FAISS embedding index."
     )
     parser.add_argument(
         "--embed-jobs",
         action="store_true",
-        help="Query all jobs, generate embeddings, build the FAISS index, and save it to disk.",
+        help="Generate embeddings, build FAISS index, and save to disk.",
     )
 
     args = parser.parse_args()

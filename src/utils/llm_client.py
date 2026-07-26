@@ -87,7 +87,7 @@ class GeminiClient(BaseLLMClient):
             return response.text
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
-            raise RuntimeError("Gemini API call failed")
+            raise RuntimeError("Gemini API call failed") from e
 
     def extract(self, prompt: str) -> dict:
         raw = self.chat(prompt)
@@ -118,7 +118,7 @@ class OpenAIClient(BaseLLMClient):
             return response.choices[0].message.content or ""
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
-            raise RuntimeError("OpenAI API call failed")
+            raise RuntimeError("OpenAI API call failed") from e
 
     def extract(self, prompt: str) -> dict:
         raw = self.chat(prompt)
@@ -150,7 +150,7 @@ class AnthropicClient(BaseLLMClient):
             return response.content[0].text
         except Exception as e:
             logger.error(f"Anthropic API error: {e}")
-            raise RuntimeError("Anthropic API call failed")
+            raise RuntimeError("Anthropic API call failed") from e
 
     def extract(self, prompt: str) -> dict:
         raw = self.chat(prompt)
@@ -186,7 +186,7 @@ class OllamaClient(BaseLLMClient):
             return response.json().get("response", "")
         except Exception as e:
             logger.error(f"Ollama API error: {e}")
-            raise RuntimeError("Ollama API call failed")
+            raise RuntimeError("Ollama API call failed") from e
 
     def extract(self, prompt: str) -> dict:
         raw = self.chat(prompt)

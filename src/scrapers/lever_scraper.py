@@ -90,7 +90,8 @@ class LeverScraper:
             # Infinite loop protection
             if len(job_links) == previous_size:
                 logger.warning(
-                    "Pagination did not yield new links. Breaking to avoid infinite loop."
+                    "Pagination did not yield new links. "
+                    "Breaking to avoid infinite loop."
                 )
                 break
 
@@ -133,14 +134,14 @@ class LeverScraper:
             location = None
 
         try:
-            # Lever typically uses data-qa attributes for the job description and requirements
+            # Lever uses data-qa attributes for job description & requirements
             jd_locators = page.locator(
                 "[data-qa='job-description'], [data-qa='posting-requirements']"
             ).all()
             if jd_locators:
                 jd_text = "\n\n".join(loc.inner_text().strip() for loc in jd_locators)
             else:
-                # Fallback to general content wrapper or page-centered section (used by tests)
+                # Fallback to general content wrapper or section
                 try:
                     page.wait_for_selector(
                         ".content-wrapper, .section.page-centered", timeout=2000

@@ -33,7 +33,8 @@ def extract_company_name(board_url: str) -> str:
     if "lever.co" in hostname and path_parts:
         return path_parts[0]
 
-    # 2. Greenhouse: boards.greenhouse.io/<company> or job-boards.greenhouse.io/<company>
+    # 2. Greenhouse: boards.greenhouse.io/<company> or
+    # job-boards.greenhouse.io/<company>
     if "greenhouse.io" in hostname and path_parts:
         return path_parts[0]
 

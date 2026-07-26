@@ -70,10 +70,7 @@ def test_lever_pagination(browser_context):
 
     def route_handler(route):
         call_count["count"] += 1
-        if call_count["count"] == 1:
-            body = page1_html
-        else:
-            body = page2_html
+        body = page1_html if call_count["count"] == 1 else page2_html
         route.fulfill(status=200, content_type="text/html", body=body)
 
     page.route("**/*", route_handler)
@@ -160,10 +157,7 @@ def test_greenhouse_pagination(browser_context):
 
     def route_handler(route):
         call_count["count"] += 1
-        if call_count["count"] == 1:
-            body = page1_html
-        else:
-            body = page2_html
+        body = page1_html if call_count["count"] == 1 else page2_html
         route.fulfill(status=200, content_type="text/html", body=body)
 
     page.route("**/*", route_handler)
@@ -245,7 +239,7 @@ def test_generic_static_page_extraction():
 
 
 def test_generic_sequential_detection_static_first():
-    """GenericScraper tries static scraping first and returns early if jobs are found."""
+    """GenericScraper tries static scraping first and returns early if jobs found."""
     scraper = GenericScraper(delay=0)
 
     mock_jobs = [
@@ -310,7 +304,7 @@ def test_generic_sequential_detection_dynamic_fallback():
 
 
 def test_generic_sequential_detection_runtime_error():
-    """GenericScraper raises RuntimeError if both static and dynamic fail to find jobs."""
+    """GenericScraper raises RuntimeError if static and dynamic fail to find jobs."""
     scraper = GenericScraper(delay=0)
 
     with patch("src.scrapers.generic_scraper.StaticScraper") as mock_static:

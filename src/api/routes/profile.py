@@ -182,7 +182,8 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         try:
             llm = get_llm_client()
             prompt = (
-                "You are an expert resume parser. Extract the structured fields listed below in JSON format from the following resume text. "
+                "You are an expert resume parser. Extract the structured fields listed "
+                "below in JSON format from the following resume text. "
                 "Ensure the response is a single valid JSON object containing exactly these keys:\n"
                 "- name (str or null if not found)\n"
                 "- email (str or null if not found)\n"
@@ -213,12 +214,12 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         if not name:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Name is required but could not be extracted from resume. Please specify name.",
+                detail="Name is required but could not be extracted from resume.",
             )
         if not email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email is required but could not be extracted from resume. Please specify email.",
+                detail="Email is required but could not be extracted from resume.",
             )
 
         # Clean email and simple regex validate
