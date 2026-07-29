@@ -579,7 +579,7 @@ def score_all_jobs(
     if not user:
         raise ValueError(f"User with ID {user_id} not found.")
 
-    jobs = db.query(Job).filter(Job.is_spam == False).all()  # noqa: E712
+    jobs = db.query(Job).filter(Job.is_spam == False).all()
 
     results: list[dict[str, Any]] = []
     for job in jobs:
@@ -666,7 +666,7 @@ if __name__ == "__main__":
         ]
 
         print(json.dumps(formatted_results, indent=2))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.error(f"Error during match scorer CLI execution: {exc}")
         raise
     finally:

@@ -35,7 +35,7 @@ class ProfileCreateSchema(BaseModel):
 
 
 @router.post("")
-async def create_profile(request: Request, db: Session = Depends(get_db)):
+async def create_profile(request: Request, db: Session = Depends(get_db)):  # noqa: B008
     """Creates a user profile either from JSON payload or a PDF resume upload."""
     content_type = request.headers.get("content-type", "")
 
@@ -94,9 +94,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         file = form.get("file")
         from starlette.datastructures import UploadFile as StarletteUploadFile
 
-        if not file or not (
-            isinstance(file, UploadFile) or isinstance(file, StarletteUploadFile)
-        ):
+        if not file or not isinstance(file, (UploadFile, StarletteUploadFile)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Resume PDF file is required",
@@ -123,7 +121,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
                     parsed = json.loads(val_str)
                     if isinstance(parsed, list):
                         return [str(v).strip() for v in parsed]
-                except Exception:  # noqa: BLE001
+                except (json.JSONDecodeError, TypeError, ValueError):
                     pass
             return [v.strip() for v in val_str.split(",") if v.strip()]
 
@@ -271,7 +269,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/{user_id}")
-def get_profile(user_id: str, db: Session = Depends(get_db)):
+def get_profile(user_id: str, db: Session = Depends(get_db)):  # noqa: B008
     """Retrieves the full profile of a user by UUID."""
     try:
         u_id = uuid.UUID(user_id)

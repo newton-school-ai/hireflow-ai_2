@@ -34,8 +34,7 @@ def parse_llm_json(raw: str) -> str:
         first_newline = text.find("\n")
         if first_newline != -1:
             text = text[first_newline + 1 :]
-    if text.endswith("```"):
-        text = text[: -len("```")]
+    text = text.removesuffix("```")
     return text.strip()
 
 
@@ -85,7 +84,7 @@ class GeminiClient(BaseLLMClient):
             model = genai.GenerativeModel(self._model)
             response = model.generate_content(prompt)
             return response.text
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error(f"Gemini API error: {e}")
             raise RuntimeError("Gemini API call failed") from e
 
@@ -116,7 +115,7 @@ class OpenAIClient(BaseLLMClient):
                 temperature=0.1,
             )
             return response.choices[0].message.content or ""
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error(f"OpenAI API error: {e}")
             raise RuntimeError("OpenAI API call failed") from e
 
@@ -148,7 +147,7 @@ class AnthropicClient(BaseLLMClient):
                 temperature=0.1,
             )
             return response.content[0].text
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error(f"Anthropic API error: {e}")
             raise RuntimeError("Anthropic API call failed") from e
 
@@ -184,7 +183,7 @@ class OllamaClient(BaseLLMClient):
             )
             response.raise_for_status()
             return response.json().get("response", "")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error(f"Ollama API error: {e}")
             raise RuntimeError("Ollama API call failed") from e
 

@@ -110,10 +110,8 @@ class GenericScraper:
 
                 try:
                     page.goto(url, wait_until="networkidle", timeout=15000)
-                except Exception as e:  # noqa: BLE001
-                    logger.error(
-                        f"Failed to load dynamic page {url}: {e}", exc_info=True
-                    )
+                except Exception:
+                    logger.exception(f"Failed to load dynamic page {url}")
                     browser.close()
                     return []
 
@@ -130,15 +128,13 @@ class GenericScraper:
                         job = self._scrape_dynamic_job(page, link, url)
                         if job:
                             results.append(job)
-                    except Exception as e:  # noqa: BLE001
-                        logger.error(
-                            f"Error scraping dynamic job {link}: {e}", exc_info=True
-                        )
+                    except Exception:
+                        logger.exception(f"Error scraping dynamic job {link}")
                     time.sleep(self.delay)
 
                 browser.close()
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"Playwright error: {e}", exc_info=True)
+        except Exception:
+            logger.exception("Playwright error")
 
         return results
 
@@ -163,7 +159,8 @@ class GenericScraper:
                 if abs_url not in seen:
                     seen.add(abs_url)
                     links.append(abs_url)
-            except Exception:  # noqa: BLE001
+            except (AttributeError, TypeError, ValueError) as e:
+                logger.debug(f"Failed to inspect anchor: {e}")
                 continue
 
         return links
@@ -172,8 +169,8 @@ class GenericScraper:
         """Navigate to a single job page and extract data with Playwright."""
         try:
             page.goto(job_url, wait_until="domcontentloaded", timeout=10000)
-        except Exception as e:  # noqa: BLE001
-            logger.error(f"Failed to load job {job_url}: {e}", exc_info=True)
+        except Exception:
+            logger.exception(f"Failed to load job {job_url}")
             return None
 
         # Title

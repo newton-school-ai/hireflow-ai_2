@@ -115,8 +115,8 @@ def save_job(
             )
             db.add(job)
             db.commit()
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"DB Error saving job {application_url}: {e}", exc_info=True)
+        logger.exception(f"DB Error saving job {application_url}")
     finally:
         db.close()
