@@ -55,8 +55,8 @@ class StaticScraper:
                 job = self._scrape_job(link, url)
                 if job:
                     results.append(job)
-            except Exception as e:
-                logger.error(f"Error scraping job {link}: {e}", exc_info=True)
+            except Exception:
+                logger.exception(f"Error scraping job {link}")
             time.sleep(self.delay)
 
         return results
@@ -71,8 +71,8 @@ class StaticScraper:
             resp = requests.get(url, timeout=15, headers={"User-Agent": "HireFlow/1.0"})
             resp.raise_for_status()
             return resp.text
-        except requests.RequestException as e:
-            logger.error(f"Failed to fetch {url}: {e}", exc_info=True)
+        except requests.RequestException:
+            logger.exception(f"Failed to fetch {url}")
             return None
 
     def _extract_job_links(self, soup: BeautifulSoup, base_url: str) -> list[str]:

@@ -11,7 +11,7 @@ import json
 import logging
 import os
 import uuid
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import faiss
 import numpy as np
@@ -23,7 +23,7 @@ from src.config.settings import settings
 logger = logging.getLogger(__name__)
 
 # Module-level model cache to reuse the singleton model instance
-_model_cache: Dict[str, Any] = {}
+_model_cache: dict[str, Any] = {}
 
 
 def get_embedding_model(model_name: str) -> Any:
@@ -66,7 +66,7 @@ class EmbeddingPipeline:
         self.model_name = model_name or settings.embedding_model
         self.index_dir = index_dir or settings.faiss_index_dir
         self.index: faiss.IndexFlatIP | None = None
-        self.job_metadata: List[Dict[str, Any]] = []
+        self.job_metadata: list[dict[str, Any]] = []
 
     @property
     def model(self) -> Any:
@@ -80,7 +80,7 @@ class EmbeddingPipeline:
             text: The input text to embed.
 
         Returns:
-            A normalized 1D numpy array of shape (dimension,) or None if text is empty/None.
+            A normalized 1D numpy array of shape (dimension,) or None.
         """
         if text is None:
             logger.warning("Received None input for embedding.")
@@ -108,7 +108,7 @@ class EmbeddingPipeline:
         Returns:
             A combined string of role title, company name, and job description.
         """
-        # Ensure role_title and company_name are strings to prevent None concatenation issues
+        # Ensure role_title & company_name are strings to prevent None issues
         role = job.role_title or ""
         company = job.company_name or ""
         jd = job.jd_text or ""
@@ -116,14 +116,14 @@ class EmbeddingPipeline:
 
     def embed_jobs(
         self, db: Session | None = None
-    ) -> Tuple[List[uuid.UUID], np.ndarray | None]:
+    ) -> tuple[list[uuid.UUID], np.ndarray | None]:
         """Queries non-spam, non-empty jobs from the database and generates embeddings.
 
         Args:
-            db: Optional SQLAlchemy Session. If not provided, a new one will be opened and closed.
+            db: Optional Session. If not provided, a new session is opened/closed.
 
         Returns:
-            A tuple of (list of job UUIDs, 2D float32 numpy array of shape (num_jobs, dimension) or None).
+            Tuple of (list of job UUIDs, 2D float32 numpy array or None).
         """
         db_provided = db is not None
         session = db or SessionLocal()
@@ -133,7 +133,7 @@ class EmbeddingPipeline:
 
             # Query non-spam jobs with non-empty job descriptions
             query = session.query(Job).filter(
-                Job.is_spam == False,  # noqa: E712
+                Job.is_spam == False,
                 Job.jd_text.isnot(None),
                 Job.jd_text != "",
             )
@@ -193,8 +193,8 @@ class EmbeddingPipeline:
 
             self.index = index
 
-            # Store mapping metadata of the index positions
-            # We fetch role_title and company_name directly to avoid database queries during search
+            # Store mapping metadata of index positions
+            # Fetch role_title & company_name directly to avoid search queries
             from src.models.job import Job
 
             jobs_map = {
@@ -226,7 +226,7 @@ class EmbeddingPipeline:
         """Saves the current FAISS index and metadata mapping to disk.
 
         Args:
-            directory: Optional custom path to save index files. Defaults to configured directory.
+            directory: Optional custom path to save index files.
         """
         target_dir = directory or self.index_dir
 
@@ -255,10 +255,10 @@ class EmbeddingPipeline:
         """Loads a FAISS index and metadata mapping from disk if present.
 
         Args:
-            directory: Optional custom path to load index files from. Defaults to configured directory.
+            directory: Optional custom path to load index files from.
 
         Returns:
-            True if loaded successfully, False if files are missing or could not be loaded.
+            True if loaded successfully, False otherwise.
         """
         target_dir = directory or self.index_dir
         index_path = os.path.join(target_dir, "index.faiss")
@@ -271,20 +271,20 @@ class EmbeddingPipeline:
         try:
             self.index = faiss.read_index(index_path)
 
-            with open(meta_path, "r", encoding="utf-8") as f:
+            with open(meta_path, encoding="utf-8") as f:
                 self.job_metadata = json.load(f)
 
             logger.info(
                 f"Loaded FAISS index with {self.index.ntotal} vectors from {target_dir}"
             )
             return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load FAISS index from {target_dir}: {e}")
             self.index = None
             self.job_metadata = []
             return False
 
-    def search(self, text: str | None, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(self, text: str | None, top_k: int = 5) -> list[dict[str, Any]]:
         """Searches the index for the top_k most similar jobs to the given query text.
 
         Args:
@@ -352,7 +352,7 @@ class EmbeddingPipeline:
                     )
 
             return results
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Error occurred during FAISS index search: {e}")
             return []
 
@@ -365,12 +365,12 @@ if __name__ == "__main__":
     )
 
     parser = argparse.ArgumentParser(
-        description="HireFlow AI CLI tool to build and update the FAISS embedding index."
+        description="HireFlow AI CLI tool to build/update FAISS embedding index."
     )
     parser.add_argument(
         "--embed-jobs",
         action="store_true",
-        help="Query all jobs, generate embeddings, build the FAISS index, and save it to disk.",
+        help="Generate embeddings, build FAISS index, and save to disk.",
     )
 
     args = parser.parse_args()

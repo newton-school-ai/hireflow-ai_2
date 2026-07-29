@@ -4,20 +4,23 @@ Uses Playwright to navigate and extract job postings from Lever career boards.
 Designed to handle Lever's specific DOM structure, dynamic loading, and pagination.
 """
 
-import time
-import logging
 import argparse
+import logging
+import time
 import urllib.parse
+
 from playwright.sync_api import (
-    sync_playwright,
     Page,
+    sync_playwright,
+)
+from playwright.sync_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 
 from src.scrapers.scraper_utils import (
     classify_listing_type,
-    save_job,
     extract_company_name,
+    save_job,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +39,7 @@ class LeverScraper:
 
             try:
                 self._scrape_board(page, company_name, board_url)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error scraping {board_url}: {e}")
             finally:
                 browser.close()
@@ -44,7 +47,7 @@ class LeverScraper:
     def _scrape_board(self, page: Page, company_name: str, board_url: str):
         try:
             page.goto(board_url, wait_until="domcontentloaded")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load board {board_url}: {e}")
             return
 
@@ -66,7 +69,7 @@ class LeverScraper:
                         path_parts = [p for p in parsed.path.split("/") if p]
                         if len(path_parts) >= 1:
                             job_links.add(abs_href)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error extracting links: {e}")
 
             # Pagination check
@@ -81,13 +84,14 @@ class LeverScraper:
                     time.sleep(self.delay)
                 else:
                     break
-            except Exception:
+            except Exception:  # noqa: BLE001
                 break
 
             # Infinite loop protection
             if len(job_links) == previous_size:
                 logger.warning(
-                    "Pagination did not yield new links. Breaking to avoid infinite loop."
+                    "Pagination did not yield new links. "
+                    "Breaking to avoid infinite loop."
                 )
                 break
 
@@ -95,14 +99,14 @@ class LeverScraper:
         for link in job_links:
             try:
                 self._scrape_job(page, company_name, link)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error scraping job {link}: {e}")
             time.sleep(self.delay)
 
     def _scrape_job(self, page: Page, company_name: str, job_url: str):
         try:
             page.goto(job_url, wait_until="domcontentloaded")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load job {job_url}: {e}")
             return
 
@@ -114,7 +118,7 @@ class LeverScraper:
                 role_title = page.locator("h1").first.inner_text(timeout=2000).strip()
         except PlaywrightTimeoutError:
             role_title = "Unknown Role"
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to extract title for {job_url}: {e}")
             return
 
@@ -126,18 +130,18 @@ class LeverScraper:
                 location = loc_locator.inner_text().strip()
             else:
                 location = None
-        except Exception:
+        except Exception:  # noqa: BLE001
             location = None
 
         try:
-            # Lever typically uses data-qa attributes for the job description and requirements
+            # Lever uses data-qa attributes for job description & requirements
             jd_locators = page.locator(
                 "[data-qa='job-description'], [data-qa='posting-requirements']"
             ).all()
             if jd_locators:
                 jd_text = "\n\n".join(loc.inner_text().strip() for loc in jd_locators)
             else:
-                # Fallback to general content wrapper or page-centered section (used by tests)
+                # Fallback to general content wrapper or section
                 try:
                     page.wait_for_selector(
                         ".content-wrapper, .section.page-centered", timeout=2000
@@ -147,10 +151,10 @@ class LeverScraper:
                         .first.inner_text()
                         .strip()
                     )
-                except Exception:
+                except Exception:  # noqa: BLE001
                     page.wait_for_selector("body", timeout=2000)
                     jd_text = page.locator("body").inner_text().strip()
-        except Exception:
+        except Exception:  # noqa: BLE001
             jd_text = "Description not found."
 
         # Note on posting_date: Lever does not natively expose the posting date

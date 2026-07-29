@@ -4,11 +4,12 @@ Unit and integration tests for the Profile and Onboarding API.
 
 import io
 import uuid
+from unittest.mock import MagicMock, patch
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from unittest.mock import MagicMock, patch
 
 from src.api.main import app
 from src.config.database import Base, get_db
@@ -157,7 +158,7 @@ async def test_get_profile_not_found(client):
 async def test_create_profile_pdf_success(
     mock_pdf_reader, mock_get_llm, client, db_session
 ):
-    """POST /profile with PDF file upload should parse and extract structured data using LLM."""
+    """POST /profile with PDF upload should parse structured data using LLM."""
     # Mock PDF reader page extraction
     mock_page = MagicMock()
     mock_page.extract_text.return_value = (

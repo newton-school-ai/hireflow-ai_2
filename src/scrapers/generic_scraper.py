@@ -14,23 +14,25 @@ Usage::
     jobs = scraper.scrape("https://example.com/careers")
 """
 
-import logging
 import argparse
+import logging
 import time
 import urllib.parse
 
 from playwright.sync_api import (
-    sync_playwright,
     TimeoutError as PlaywrightTimeoutError,
 )
+from playwright.sync_api import (
+    sync_playwright,
+)
 
-from src.scrapers.static_scraper import StaticScraper
 from src.scrapers.scraper_utils import (
     classify_listing_type,
-    save_job,
     extract_company_name,
     is_job_path,
+    save_job,
 )
+from src.scrapers.static_scraper import StaticScraper
 
 logger = logging.getLogger(__name__)
 
@@ -108,10 +110,8 @@ class GenericScraper:
 
                 try:
                     page.goto(url, wait_until="networkidle", timeout=15000)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to load dynamic page {url}: {e}", exc_info=True
-                    )
+                except Exception:
+                    logger.exception(f"Failed to load dynamic page {url}")
                     browser.close()
                     return []
 
@@ -128,15 +128,13 @@ class GenericScraper:
                         job = self._scrape_dynamic_job(page, link, url)
                         if job:
                             results.append(job)
-                    except Exception as e:
-                        logger.error(
-                            f"Error scraping dynamic job {link}: {e}", exc_info=True
-                        )
+                    except Exception:
+                        logger.exception(f"Error scraping dynamic job {link}")
                     time.sleep(self.delay)
 
                 browser.close()
-        except Exception as e:
-            logger.error(f"Playwright error: {e}", exc_info=True)
+        except Exception:
+            logger.exception("Playwright error")
 
         return results
 
@@ -161,7 +159,8 @@ class GenericScraper:
                 if abs_url not in seen:
                     seen.add(abs_url)
                     links.append(abs_url)
-            except Exception:
+            except (AttributeError, TypeError, ValueError) as e:
+                logger.debug(f"Failed to inspect anchor: {e}")
                 continue
 
         return links
@@ -170,8 +169,8 @@ class GenericScraper:
         """Navigate to a single job page and extract data with Playwright."""
         try:
             page.goto(job_url, wait_until="domcontentloaded", timeout=10000)
-        except Exception as e:
-            logger.error(f"Failed to load job {job_url}: {e}", exc_info=True)
+        except Exception:
+            logger.exception(f"Failed to load job {job_url}")
             return None
 
         # Title
@@ -183,7 +182,7 @@ class GenericScraper:
                 role_title = page.locator("h2").first.inner_text(timeout=2000).strip()
         except PlaywrightTimeoutError:
             role_title = "Unknown Role"
-        except Exception:
+        except Exception:  # noqa: BLE001
             role_title = "Unknown Role"
 
         if not role_title:
@@ -196,7 +195,7 @@ class GenericScraper:
                 location = loc_locator.inner_text().strip() or None
             else:
                 location = None
-        except Exception:
+        except Exception:  # noqa: BLE001
             location = None
 
         # Description
@@ -208,7 +207,7 @@ class GenericScraper:
                 jd_text = desc_locator.inner_text().strip()
             else:
                 jd_text = page.locator("body").inner_text().strip()
-        except Exception:
+        except Exception:  # noqa: BLE001
             jd_text = "Description not found."
 
         listing_type = classify_listing_type(role_title)

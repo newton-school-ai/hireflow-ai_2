@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from src.agents.spam_filter import (
     SpamFilter,
@@ -17,7 +18,9 @@ def test_spam_rockstar_ninja():
     sf = SpamFilter()
     result = sf.score(
         {
-            "jd_text": "We need a rockstar ninja developer. Great pay. Must be passionate.",
+            "jd_text": (
+                "We need a rockstar ninja developer. Great pay. Must be passionate."
+            ),
             "company_name": "",
             "skills_required": [],
         }
@@ -31,7 +34,10 @@ def test_spam_unrealistic_salary():
     sf = SpamFilter()
     result = sf.score(
         {
-            "jd_text": "Earn $500k guaranteed! Easy money. No experience needed. Be your own boss.",
+            "jd_text": (
+                "Earn $500k guaranteed! Easy money. No experience needed. "
+                "Be your own boss."
+            ),
             "company_name": "",
             "skills_required": [],
         }
@@ -45,7 +51,9 @@ def test_spam_vague_listing():
     sf = SpamFilter()
     result = sf.score(
         {
-            "jd_text": "Dream job awaits! Work hard play hard. Unlimited salary potential.",
+            "jd_text": (
+                "Dream job awaits! Work hard play hard. Unlimited salary potential."
+            ),
             "company_name": "",
             "skills_required": [],
         }

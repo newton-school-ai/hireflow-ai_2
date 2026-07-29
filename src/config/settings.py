@@ -5,6 +5,7 @@ Loads variables from .env and environment.
 """
 
 from enum import Enum
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

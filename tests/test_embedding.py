@@ -2,7 +2,7 @@
 Unit tests for the embedding pipeline and FAISS index.
 
 Includes tests for embedding generation, handling of empty/short texts,
-FAISS search functionality, saving and loading of index files, and SQL database integration.
+FAISS search functionality, saving and loading of index files, and DB integration.
 """
 
 import os
@@ -34,7 +34,7 @@ class MockSentenceTransformer:
         if isinstance(texts, str):
             # 1D unit vector
             vector = np.zeros(self.dimension, dtype=np.float32)
-            # Use hash-based element to make different texts produce slightly different vectors
+            # Hash-based element to make different texts produce different vectors
             idx = abs(hash(texts)) % self.dimension
             vector[idx] = 1.0
             return vector
@@ -75,7 +75,7 @@ def db_session():
 
 
 def test_embed_text_valid(mock_transformer):
-    """Checks that embed_text generates a normalized float32 vector of correct dimension."""
+    """Checks that embed_text generates a normalized vector of correct dimension."""
     pipeline = EmbeddingPipeline()
     vector = pipeline.embed_text("Python Developer")
 
@@ -89,7 +89,7 @@ def test_embed_text_valid(mock_transformer):
 
 
 def test_embed_text_edge_cases(mock_transformer):
-    """Verifies that embed_text handles None, empty strings, and very short texts correctly."""
+    """Verifies that embed_text handles None, empty strings, and short texts."""
     pipeline = EmbeddingPipeline()
 
     # None input
@@ -106,7 +106,7 @@ def test_embed_text_edge_cases(mock_transformer):
 
 
 def test_embed_jobs_filtering(mock_transformer, db_session):
-    """Verifies that embed_jobs correctly processes non-spam jobs and ignores spam/empty jobs."""
+    """Verifies that embed_jobs processes non-spam jobs and ignores spam/empty jobs."""
     # Seed mock database with mix of clean, spam, and empty description jobs
     job_clean1 = Job(
         id=uuid.uuid4(),
@@ -227,7 +227,7 @@ def test_faiss_search_and_similarity(mock_transformer, db_session):
 
 
 def test_save_and_load_index(mock_transformer, db_session):
-    """Verifies that saving the index and loading it back returns identical search results."""
+    """Verifies that saving and loading index returns identical search results."""
     job1 = Job(
         id=uuid.uuid4(),
         company_name="Meta",
