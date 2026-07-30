@@ -36,6 +36,7 @@ class Settings(BaseSettings):
 
     # Agent Settings
     spam_threshold: float = 0.7
+    max_job_age_days: int = 30
 
     # Groq
     groq_api_key: str | None = None

@@ -314,6 +314,7 @@ class TestApplicationStatusEnum:
         "planned",
         "matched",
         "shortlisted",
+        "confirmed",
         "resume_generated",
         "applied",
         "failed",
