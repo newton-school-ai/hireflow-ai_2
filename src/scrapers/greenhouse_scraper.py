@@ -4,20 +4,23 @@ Uses Playwright to navigate and extract job postings from Greenhouse career boar
 Designed to handle Greenhouse's specific DOM structure, dynamic loading, and pagination.
 """
 
-import time
-import logging
 import argparse
+import logging
+import time
 import urllib.parse
+
 from playwright.sync_api import (
-    sync_playwright,
     Page,
+    sync_playwright,
+)
+from playwright.sync_api import (
     TimeoutError as PlaywrightTimeoutError,
 )
 
 from src.scrapers.scraper_utils import (
     classify_listing_type,
-    save_job,
     extract_company_name,
+    save_job,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +39,7 @@ class GreenhouseScraper:
 
             try:
                 self._scrape_board(page, company_name, board_url)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error scraping {board_url}: {e}")
             finally:
                 browser.close()
@@ -44,19 +47,18 @@ class GreenhouseScraper:
     def _scrape_board(self, page: Page, company_name: str, board_url: str):
         try:
             page.goto(board_url, wait_until="domcontentloaded")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load board {board_url}: {e}")
             return
 
         time.sleep(self.delay)
 
-        job_links = set()
+        job_links: set[str] = set()
         while True:
             previous_size = len(job_links)
 
             # Find all job links
             try:
-                # For new job-boards.greenhouse.io, wait for the links to load
                 try:
                     page.wait_for_selector(
                         ".opening a, .job-post a, a[data-mapped='true'], a[href*='/jobs/']",
@@ -65,11 +67,9 @@ class GreenhouseScraper:
                 except PlaywrightTimeoutError:
                     if len(job_links) == 0:
                         raise RuntimeError(
-                            f"Could not find any job links on {board_url}. The board may be inactive or selectors have changed."
-                        )
+                            f"Could not find any job links on {board_url}."
+                        ) from None
 
-                # The classic Greenhouse uses ".opening a", the new "job-boards.greenhouse.io" uses ".job-post a".
-                # We'll use a broad CSS selector to capture both.
                 openings = page.locator(
                     ".opening a, .job-post a, a[data-mapped='true'], a[href*='/jobs/']"
                 ).all()
@@ -79,16 +79,17 @@ class GreenhouseScraper:
                         href = link.get_attribute("href")
                         if href:
                             abs_href = urllib.parse.urljoin(board_url, href)
-                            # Ensure it's a greenhouse job link
                             parsed = urllib.parse.urlparse(abs_href)
                             path_parts = [p for p in parsed.path.split("/") if p]
                             if (
                                 "greenhouse.io" in abs_href or "jobs" in abs_href
                             ) and len(path_parts) >= 2:
                                 job_links.add(abs_href)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.error(f"Error extracting links: {e}")
-            except Exception as e:
+            except RuntimeError:
+                raise
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error extracting links: {e}")
 
             # Pagination check
@@ -101,16 +102,14 @@ class GreenhouseScraper:
                     try:
                         page.wait_for_load_state("domcontentloaded", timeout=3000)
                     except PlaywrightTimeoutError:
-                        # It might be an SPA, wait a bit for AJAX
                         page.wait_for_timeout(2000)
                     time.sleep(self.delay)
                 else:
                     break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.debug(f"Pagination stopped: {e}")
                 break
 
-            # Infinite loop protection
             if len(job_links) == previous_size:
                 logger.warning(
                     "Pagination did not yield new links. Breaking to avoid infinite loop."
@@ -121,7 +120,7 @@ class GreenhouseScraper:
         for link in job_links:
             try:
                 self._scrape_job(page, company_name, link)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"Error scraping job {link}: {e}")
             time.sleep(self.delay)
 
@@ -133,7 +132,7 @@ class GreenhouseScraper:
                 page.wait_for_selector("#content, .job__description", timeout=3000)
             except PlaywrightTimeoutError:
                 pass
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to load job {job_url}: {e}")
             return
 
@@ -145,7 +144,7 @@ class GreenhouseScraper:
                 role_title = page.locator("h1").first.inner_text(timeout=2000).strip()
         except PlaywrightTimeoutError:
             role_title = "Unknown Role"
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to extract title for {job_url}: {e}")
             return
 
@@ -155,7 +154,7 @@ class GreenhouseScraper:
                 location = loc_locator.inner_text().strip()
             else:
                 location = None
-        except Exception:
+        except Exception:  # noqa: BLE001
             location = None
 
         try:
@@ -166,9 +165,9 @@ class GreenhouseScraper:
                 try:
                     page.wait_for_selector("body", timeout=1000)
                     jd_text = page.locator("body").inner_text().strip()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     jd_text = "Description not found."
-        except Exception:
+        except Exception:  # noqa: BLE001
             jd_text = "Description not found."
 
         # Note on posting_date: Greenhouse does not natively expose the posting date

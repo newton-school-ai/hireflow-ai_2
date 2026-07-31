@@ -79,6 +79,7 @@ class Application(Base):
             "planned",
             "matched",
             "shortlisted",
+            "confirmed",
             "resume_generated",
             "applied",
             "failed",

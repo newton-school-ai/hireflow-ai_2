@@ -14,8 +14,8 @@ from src.models.report import WeeklyReport
 from src.models.user import User
 
 __all__ = [
-    "Base",
     "Application",
+    "Base",
     "Job",
     "PrepGuide",
     "User",

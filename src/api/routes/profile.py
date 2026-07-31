@@ -5,10 +5,11 @@ API routes for user profile and onboarding in HireFlow AI.
 import io
 import re
 import uuid
+
+import pypdf
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from pydantic import BaseModel, EmailStr, Field, ValidationError
 from sqlalchemy.orm import Session
-import pypdf
 
 from src.config.database import get_db
 from src.models.user import User
@@ -34,14 +35,14 @@ class ProfileCreateSchema(BaseModel):
 
 
 @router.post("")
-async def create_profile(request: Request, db: Session = Depends(get_db)):
+async def create_profile(request: Request, db: Session = Depends(get_db)):  # noqa: B008
     """Creates a user profile either from JSON payload or a PDF resume upload."""
     content_type = request.headers.get("content-type", "")
 
     if "application/json" in content_type:
         try:
             body = await request.json()
-        except Exception:
+        except Exception:  # noqa: BLE001
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid JSON payload",
@@ -93,9 +94,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         file = form.get("file")
         from starlette.datastructures import UploadFile as StarletteUploadFile
 
-        if not file or not (
-            isinstance(file, UploadFile) or isinstance(file, StarletteUploadFile)
-        ):
+        if not file or not isinstance(file, (UploadFile, StarletteUploadFile)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Resume PDF file is required",
@@ -122,7 +121,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
                     parsed = json.loads(val_str)
                     if isinstance(parsed, list):
                         return [str(v).strip() for v in parsed]
-                except Exception:
+                except (json.JSONDecodeError, TypeError, ValueError):
                     pass
             return [v.strip() for v in val_str.split(",") if v.strip()]
 
@@ -165,7 +164,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
                 page_text = page.extract_text()
                 if page_text:
                     text += page_text + "\n"
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Failed to parse PDF resume: {e}",
@@ -181,7 +180,8 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         try:
             llm = get_llm_client()
             prompt = (
-                "You are an expert resume parser. Extract the structured fields listed below in JSON format from the following resume text. "
+                "You are an expert resume parser. Extract the structured fields listed "
+                "below in JSON format from the following resume text. "
                 "Ensure the response is a single valid JSON object containing exactly these keys:\n"
                 "- name (str or null if not found)\n"
                 "- email (str or null if not found)\n"
@@ -197,7 +197,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="LLM failed to return structured JSON data",
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"LLM extraction failed: {e}",
@@ -212,12 +212,12 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
         if not name:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Name is required but could not be extracted from resume. Please specify name.",
+                detail="Name is required but could not be extracted from resume.",
             )
         if not email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email is required but could not be extracted from resume. Please specify email.",
+                detail="Email is required but could not be extracted from resume.",
             )
 
         # Clean email and simple regex validate
@@ -269,7 +269,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/{user_id}")
-def get_profile(user_id: str, db: Session = Depends(get_db)):
+def get_profile(user_id: str, db: Session = Depends(get_db)):  # noqa: B008
     """Retrieves the full profile of a user by UUID."""
     try:
         u_id = uuid.UUID(user_id)

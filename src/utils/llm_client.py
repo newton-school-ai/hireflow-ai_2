@@ -2,9 +2,9 @@
 Unified LLM client for HireFlow AI.
 """
 
-from abc import ABC, abstractmethod
 import json
 import logging
+from abc import ABC, abstractmethod
 
 from src.config.settings import settings
 
@@ -34,8 +34,7 @@ def parse_llm_json(raw: str) -> str:
         first_newline = text.find("\n")
         if first_newline != -1:
             text = text[first_newline + 1 :]
-    if text.endswith("```"):
-        text = text[: -len("```")]
+    text = text.removesuffix("```")
     return text.strip()
 
 
@@ -57,7 +56,7 @@ class GroqClient(BaseLLMClient):
                 temperature=0.1,
             )
             return response.choices[0].message.content or ""
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Groq API error: {e}")
             raise RuntimeError("Groq API call failed")
 
@@ -87,7 +86,7 @@ class GeminiClient(BaseLLMClient):
             return response.text
         except Exception as e:
             logger.error(f"Gemini API error: {e}")
-            raise RuntimeError("Gemini API call failed")
+            raise RuntimeError("Gemini API call failed") from e
 
     def extract(self, prompt: str) -> dict:
         raw = self.chat(prompt)
@@ -118,7 +117,7 @@ class OpenAIClient(BaseLLMClient):
             return response.choices[0].message.content or ""
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
-            raise RuntimeError("OpenAI API call failed")
+            raise RuntimeError("OpenAI API call failed") from e
 
     def extract(self, prompt: str) -> dict:
         raw = self.chat(prompt)
@@ -150,7 +149,7 @@ class AnthropicClient(BaseLLMClient):
             return response.content[0].text
         except Exception as e:
             logger.error(f"Anthropic API error: {e}")
-            raise RuntimeError("Anthropic API call failed")
+            raise RuntimeError("Anthropic API call failed") from e
 
     def extract(self, prompt: str) -> dict:
         raw = self.chat(prompt)
@@ -186,7 +185,7 @@ class OllamaClient(BaseLLMClient):
             return response.json().get("response", "")
         except Exception as e:
             logger.error(f"Ollama API error: {e}")
-            raise RuntimeError("Ollama API call failed")
+            raise RuntimeError("Ollama API call failed") from e
 
     def extract(self, prompt: str) -> dict:
         raw = self.chat(prompt)

@@ -7,8 +7,8 @@ so that it is defined once rather than duplicated in every module.
 import logging
 import urllib.parse
 
-from src.models.job import Job
 from src.config.database import SessionLocal
+from src.models.job import Job
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,8 @@ def extract_company_name(board_url: str) -> str:
     if "lever.co" in hostname and path_parts:
         return path_parts[0]
 
-    # 2. Greenhouse: boards.greenhouse.io/<company> or job-boards.greenhouse.io/<company>
+    # 2. Greenhouse: boards.greenhouse.io/<company> or
+    # job-boards.greenhouse.io/<company>
     if "greenhouse.io" in hostname and path_parts:
         return path_parts[0]
 
@@ -114,8 +115,8 @@ def save_job(
             )
             db.add(job)
             db.commit()
-    except Exception as e:
+    except Exception:
         db.rollback()
-        logger.error(f"DB Error saving job {application_url}: {e}", exc_info=True)
+        logger.exception(f"DB Error saving job {application_url}")
     finally:
         db.close()

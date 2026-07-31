@@ -5,6 +5,7 @@ Loads variables from .env and environment.
 """
 
 from enum import Enum
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,9 +31,12 @@ class Settings(BaseSettings):
 
     # LLM Settings
     llm_provider: str = "groq"
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    faiss_index_dir: str = "./data/faiss_index"
 
     # Agent Settings
     spam_threshold: float = 0.7
+    max_job_age_days: int = 30
 
     # Groq
     groq_api_key: str | None = None

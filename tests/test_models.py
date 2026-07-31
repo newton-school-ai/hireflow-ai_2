@@ -7,6 +7,7 @@ Validates table structure, column constraints, relationships, and CRUD.
 
 import uuid
 from datetime import date
+from typing import ClassVar
 
 import pytest
 from sqlalchemy import create_engine, inspect
@@ -97,7 +98,7 @@ def _make_job(**overrides) -> Job:
 class TestTableExistence:
     """Verify all expected tables exist in the metadata."""
 
-    EXPECTED_TABLES = {
+    EXPECTED_TABLES: ClassVar[set[str]] = {
         "users",
         "jobs",
         "applications",
@@ -122,7 +123,7 @@ class TestTableExistence:
 class TestUsersColumns:
     """Verify the users table has every required column."""
 
-    EXPECTED_COLUMNS = {
+    EXPECTED_COLUMNS: ClassVar[set[str]] = {
         "id",
         "name",
         "email",
@@ -145,7 +146,7 @@ class TestUsersColumns:
 class TestJobsColumns:
     """Verify the jobs table has every required column."""
 
-    EXPECTED_COLUMNS = {
+    EXPECTED_COLUMNS: ClassVar[set[str]] = {
         "id",
         "company_name",
         "role_title",
@@ -165,7 +166,7 @@ class TestJobsColumns:
         "created_at",
     }
 
-    REMOVED_COLUMNS = {"salary_range", "source_platform"}
+    REMOVED_COLUMNS: ClassVar[set[str]] = {"salary_range", "source_platform"}
 
     def test_jobs_columns(self, engine):
         inspector = inspect(engine)
@@ -185,7 +186,7 @@ class TestJobsColumns:
 class TestApplicationsColumns:
     """Verify the applications table has every required column."""
 
-    EXPECTED_COLUMNS = {
+    EXPECTED_COLUMNS: ClassVar[set[str]] = {
         "id",
         "user_id",
         "job_id",
@@ -202,15 +203,15 @@ class TestApplicationsColumns:
     def test_applications_columns(self, engine):
         inspector = inspect(engine)
         actual = {col["name"] for col in inspector.get_columns("applications")}
-        assert self.EXPECTED_COLUMNS.issubset(actual), (
-            f"Missing columns in applications: " f"{self.EXPECTED_COLUMNS - actual}"
-        )
+        assert self.EXPECTED_COLUMNS.issubset(
+            actual
+        ), f"Missing columns in applications: {self.EXPECTED_COLUMNS - actual}"
 
 
 class TestPrepGuidesColumns:
     """Verify the prep_guides table has every required column."""
 
-    EXPECTED_COLUMNS = {
+    EXPECTED_COLUMNS: ClassVar[set[str]] = {
         "id",
         "user_id",
         "job_id",
@@ -225,15 +226,15 @@ class TestPrepGuidesColumns:
     def test_prep_guides_columns(self, engine):
         inspector = inspect(engine)
         actual = {col["name"] for col in inspector.get_columns("prep_guides")}
-        assert self.EXPECTED_COLUMNS.issubset(actual), (
-            f"Missing columns in prep_guides: " f"{self.EXPECTED_COLUMNS - actual}"
-        )
+        assert self.EXPECTED_COLUMNS.issubset(
+            actual
+        ), f"Missing columns in prep_guides: {self.EXPECTED_COLUMNS - actual}"
 
 
 class TestWeeklyReportsColumns:
     """Verify the weekly_reports table has every required column."""
 
-    EXPECTED_COLUMNS = {
+    EXPECTED_COLUMNS: ClassVar[set[str]] = {
         "id",
         "user_id",
         "week_start",
@@ -249,9 +250,9 @@ class TestWeeklyReportsColumns:
     def test_weekly_reports_columns(self, engine):
         inspector = inspect(engine)
         actual = {col["name"] for col in inspector.get_columns("weekly_reports")}
-        assert self.EXPECTED_COLUMNS.issubset(actual), (
-            f"Missing columns in weekly_reports: " f"{self.EXPECTED_COLUMNS - actual}"
-        )
+        assert self.EXPECTED_COLUMNS.issubset(
+            actual
+        ), f"Missing columns in weekly_reports: {self.EXPECTED_COLUMNS - actual}"
 
 
 # ===========================================================================
@@ -309,10 +310,11 @@ class TestSchemaChanges:
 class TestApplicationStatusEnum:
     """Verify the application_status_enum contains all required values."""
 
-    EXPECTED_STATUSES = {
+    EXPECTED_STATUSES: ClassVar[set[str]] = {
         "planned",
         "matched",
         "shortlisted",
+        "confirmed",
         "resume_generated",
         "applied",
         "failed",

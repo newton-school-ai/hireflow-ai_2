@@ -1,17 +1,18 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
+
+from src.config.settings import Settings
 from src.utils.llm_client import (
-    get_llm_client,
-    GroqClient,
-    GeminiClient,
-    OpenAIClient,
     AnthropicClient,
-    OllamaClient,
+    GeminiClient,
+    GroqClient,
     LLMConfigError,
+    OllamaClient,
+    OpenAIClient,
+    get_llm_client,
     parse_llm_json,
 )
-from src.config.settings import Settings
 
 
 @pytest.fixture

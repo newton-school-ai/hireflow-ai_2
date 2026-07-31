@@ -9,8 +9,10 @@ Usage:
 """
 
 import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
 from src.config.settings import settings
 
 DATABASE_URL = os.getenv(
@@ -25,8 +27,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):
     """Shared declarative base for all HireFlow models."""
-
-    pass
 
 
 def get_db():
