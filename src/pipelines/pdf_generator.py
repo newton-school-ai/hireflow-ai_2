@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import jinja2
 
@@ -98,7 +98,7 @@ class PDFGenerator:
                 res = res.replace(k, v)
         return res
 
-    def _process_data_for_latex(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_data_for_latex(self, data: dict[str, Any]) -> dict[str, Any]:
         """Recursively escape strings in the resume data."""
         if isinstance(data, dict):
             return {k: self._process_data_for_latex(v) for k, v in data.items()}
@@ -108,7 +108,7 @@ class PDFGenerator:
             return self._escape_latex(data)
         return data
 
-    def _render_tex(self, resume_content: Dict[str, Any], temp_tex_path: Path) -> None:
+    def _render_tex(self, resume_content: dict[str, Any], temp_tex_path: Path) -> None:
         """Render the resume data into the LaTeX template and save to disk."""
         template = self.jinja_env.get_template("base_template.tex")
         safe_data = self._process_data_for_latex(resume_content)
@@ -143,7 +143,7 @@ class PDFGenerator:
             )
 
     def generate(
-        self, user_id: str, job_id: str, resume_content: Dict[str, Any]
+        self, user_id: str, job_id: str, resume_content: dict[str, Any]
     ) -> str:
         """Generate a PDF resume, save it, and update the database record.
 
