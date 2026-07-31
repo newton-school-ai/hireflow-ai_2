@@ -132,7 +132,7 @@ class PDFGenerator:
             str(tex_path),
         ]
 
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command, capture_output=True, text=True, check=False)
 
         if result.returncode != 0:
             logger.error(f"XeLaTeX compilation failed for {tex_path.name}")
