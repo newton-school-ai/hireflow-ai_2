@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     # File Storage
     storage_backend: str = "local"
     local_storage_path: str = "./data"
+    resume_output_dir: str = "./data/resumes"
 
     # Other API Keys
     tavily_api_key: str | None = None

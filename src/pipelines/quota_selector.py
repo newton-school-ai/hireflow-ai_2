@@ -634,7 +634,7 @@ class QuotaSelectorPipeline:
             )
             # Decorate scored jobs with full job details
             job_map = {
-                j.id: j for j in db.query(Job).filter(Job.is_spam == False).all()
+                j.id: j for j in db.query(Job).filter(Job.is_spam.is_(False)).all()
             }
             for item in all_scored:
                 j_obj = job_map.get(item["job_id"])
