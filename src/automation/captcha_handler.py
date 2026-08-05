@@ -144,7 +144,7 @@ class CaptchaHandler:
         """
         try:
             html = self._resolve_html(source)
-        except (RuntimeError, ValueError):
+        except (RuntimeError, ValueError, TypeError):
             logger.exception(
                 "CaptchaHandler: failed to load HTML for detection — "
                 "assuming no CAPTCHA present"
@@ -167,7 +167,7 @@ class CaptchaHandler:
             The raw HTML as a string.
 
         Raises:
-            ValueError: If *source* is not a recognised type.
+            TypeError: If *source* is not a recognised type.
         """
         # Playwright page object (duck-typed by the presence of content())
         if hasattr(source, "content") and callable(source.content):
