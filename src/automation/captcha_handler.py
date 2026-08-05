@@ -144,11 +144,10 @@ class CaptchaHandler:
         """
         try:
             html = self._resolve_html(source)
-        except (RuntimeError, ValueError) as exc:
+        except (RuntimeError, ValueError):
             logger.exception(
-                "CaptchaHandler: failed to load HTML for detection (%s) — "
-                "assuming no CAPTCHA present",
-                exc,
+                "CaptchaHandler: failed to load HTML for detection — "
+                "assuming no CAPTCHA present"
             )
             return False
 
@@ -181,7 +180,7 @@ class CaptchaHandler:
                 ) from exc
 
         if not isinstance(source, str):
-            raise ValueError(
+            raise TypeError(
                 f"CaptchaHandler.detect() received an unsupported source type: "
                 f"{type(source)!r}"
             )
@@ -216,7 +215,7 @@ class CaptchaHandler:
             RuntimeError: If the URL cannot be retrieved.
         """
         try:
-            with urllib.request.urlopen(url) as response:  # noqa: S310
+            with urllib.request.urlopen(url) as response:
                 return response.read().decode("utf-8", errors="replace")
         except Exception as exc:
             raise RuntimeError(

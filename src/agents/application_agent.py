@@ -246,7 +246,7 @@ class ApplicationAgent:
                         total_attempts,
                     )
 
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 # Unexpected exception (e.g. NotImplementedError when Playwright
                 # integration is not yet wired).  Treat as a permanent failure so
                 # apply() always returns a structured result and never crashes the
