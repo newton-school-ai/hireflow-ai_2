@@ -74,6 +74,9 @@ class Application(Base):
     )
     resume_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     resume_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(
+        String(2048), nullable=True, default=None
+    )
     status: Mapped[str] = mapped_column(
         Enum(
             "planned",
