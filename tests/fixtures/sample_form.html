@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Job Application Form</title>
+    <style>
+        body { font-family: sans-serif; margin: 2rem; background-color: #f9f9f9; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 1.2rem; }
+        label { display: block; margin-bottom: 0.4rem; font-weight: bold; }
+        input[type="text"], input[type="email"], input[type="tel"], input[type="url"], select, textarea {
+            width: 100%; padding: 0.5rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;
+        }
+        button { background-color: #0066cc; color: white; border: none; padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 4px; cursor: pointer; }
+        button:disabled { background-color: #999; }
+        #success-message { display: none; background: #e6fffa; border: 1px solid #38b2ac; padding: 1rem; border-radius: 4px; color: #234e52; font-weight: bold; }
+        #error-message { display: none; background: #fff5f5; border: 1px solid #feb2b2; padding: 1rem; border-radius: 4px; color: #9b2c2c; font-weight: bold; }
+        #captcha-container { display: none; background: #fffaf0; border: 1px solid #fbd38d; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; color: #744210; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Job Application Form</h2>
+        
+        <div id="captcha-container">
+            <div id="captcha" class="g-recaptcha">
+                <p><strong>Security Verification Required:</strong> Please complete the Captcha to proceed.</p>
+            </div>
+        </div>
+
+        <div id="error-message">Form submission failed due to validation errors.</div>
+        <div id="success-message">Application submitted successfully!</div>
+
+        <form id="job-application-form">
+            <div class="form-group">
+                <label for="full-name">Full Name</label>
+                <input type="text" id="full-name" name="full_name" placeholder="Full Name" required autocomplete="name" data-testid="applicant-name">
+            </div>
+
+            <div class="form-group">
+                <label for="email-address">Email Address</label>
+                <input type="email" id="email-address" name="email" placeholder="Email Address" required autocomplete="email" data-testid="applicant-email">
+            </div>
+
+            <div class="form-group">
+                <label for="phone-number">Phone Number</label>
+                <input type="tel" id="phone-number" name="phone_number" placeholder="Phone Number" autocomplete="tel" data-testid="applicant-phone">
+            </div>
+
+            <div class="form-group">
+                <label for="location">Location</label>
+                <input type="text" id="location" name="location" placeholder="City, Country" data-testid="applicant-location">
+            </div>
+
+            <div class="form-group">
+                <label for="linkedin-url">LinkedIn Profile</label>
+                <input type="url" id="linkedin-url" name="linkedin_url" placeholder="https://linkedin.com/in/username" data-testid="applicant-linkedin">
+            </div>
+
+            <div class="form-group">
+                <label for="github-url">GitHub Profile</label>
+                <input type="url" id="github-url" name="github_url" placeholder="https://github.com/username" data-testid="applicant-github">
+            </div>
+
+            <div class="form-group">
+                <label for="portfolio-url">Portfolio URL</label>
+                <input type="url" id="portfolio-url" name="portfolio_url" placeholder="https://portfolio.dev" data-testid="applicant-portfolio">
+            </div>
+
+            <div class="form-group">
+                <label for="education-select">Education Level</label>
+                <select id="education-select" name="education" data-testid="applicant-education">
+                    <option value="">Select Education</option>
+                    <option value="bachelors">Bachelor's Degree</option>
+                    <option value="masters">Master's Degree</option>
+                    <option value="phd">Ph.D.</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Years of Experience</label>
+                <label><input type="radio" name="experience" value="0-1" data-testid="exp-0-1"> 0-1 years</label>
+                <label><input type="radio" name="experience" value="1-3" data-testid="exp-1-3"> 1-3 years</label>
+                <label><input type="radio" name="experience" value="3+" data-testid="exp-3+"> 3+ years</label>
+            </div>
+
+            <div class="form-group">
+                <label>Primary Skills</label>
+                <label><input type="checkbox" name="skills" value="Python" data-testid="skill-python"> Python</label>
+                <label><input type="checkbox" name="skills" value="JavaScript" data-testid="skill-js"> JavaScript</label>
+                <label><input type="checkbox" name="skills" value="SQL" data-testid="skill-sql"> SQL</label>
+            </div>
+
+            <div class="form-group">
+                <label for="why-hire">Why should we hire you?</label>
+                <textarea id="why-hire" name="why_should_we_hire_you" rows="4" placeholder="Tell us why you are a great fit..." data-testid="free-text-why-hire"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="tell-about-yourself">Tell us about yourself</label>
+                <textarea id="tell-about-yourself" name="tell_us_about_yourself" rows="4" placeholder="Share a brief overview of your background..." data-testid="free-text-about"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="resume-upload">Upload Resume</label>
+                <input type="file" id="resume-upload" name="resume" accept=".pdf,.docx,.doc,.txt" required data-testid="resume-file-input">
+            </div>
+
+            <button type="submit" id="submit-btn" data-testid="submit-button">Submit Application</button>
+        </form>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mode') === 'captcha') {
+            document.getElementById('captcha-container').style.display = 'block';
+        }
+
+        document.getElementById('job-application-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const mode = urlParams.get('mode');
+            if (mode === 'fail') {
+                document.getElementById('error-message').style.display = 'block';
+                return;
+            }
+            if (mode === 'captcha') {
+                document.getElementById('captcha-container').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('job-application-form').style.display = 'none';
+            document.getElementById('success-message').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
