@@ -645,10 +645,17 @@ class PDFGenerator:
                 status="resume_generated",
             )
             db.add(app)
+            db.flush()
+            from src.utils.status_logger import log_status_change
+            log_status_change(str(app.id), "None", "resume_generated")
         else:
+            old_status = app.status
             app.resume_path = resume_path
             app.resume_version = version
             app.status = "resume_generated"
+            db.flush()
+            from src.utils.status_logger import log_status_change
+            log_status_change(str(app.id), old_status, "resume_generated")
 
         db.flush()
         return app

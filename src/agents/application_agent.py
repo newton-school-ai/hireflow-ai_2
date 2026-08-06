@@ -351,10 +351,18 @@ class ApplicationAgent:
                     application_id,
                 )
                 return
-            app.status = result["status"]
+            old_status = app.status
+            new_status = result["status"]
+            reason = result.get("failure_reason")
+
+            app.status = new_status
             if hasattr(app, "failure_reason"):
-                app.failure_reason = result.get("failure_reason")
+                app.failure_reason = reason
             db.commit()
+
+            from src.utils.status_logger import log_status_change
+            log_status_change(str(app.id), old_status, new_status, reason)
+
             logger.info(
                 "ApplicationAgent: DB updated — id=%s status=%s",
                 application_id,
@@ -495,6 +503,13 @@ class ApplicationAgent:
                     failure_reason="Associated user or job record missing in database.",
                 )
 
+            # Transition to 'applying'
+            old_status = application.status
+            application.status = "applying"
+            db.commit()
+            from src.utils.status_logger import log_status_change
+            log_status_change(str(application.id), old_status, "applying")
+
             logger.info(
                 f"Orchestrating application ID {app_uuid} for job URL: {job.application_url}"
             )
@@ -533,11 +548,18 @@ class ApplicationAgent:
             )
 
             # 4. Update DB Application Record
-            application.status = fill_result.status
+            old_status = application.status
+            new_status = fill_result.status
+            application.status = new_status
             if fill_result.status == "applied":
                 application.applied_at = datetime.now(timezone.utc)
+            if hasattr(application, "failure_reason"):
+                application.failure_reason = fill_result.failure_reason
 
             db.commit()
+            from src.utils.status_logger import log_status_change
+            log_status_change(str(application.id), old_status, new_status, fill_result.failure_reason)
+
             logger.info(
                 f"Successfully updated application ID {app_uuid} status to '{fill_result.status}'."
             )
@@ -555,6 +577,19 @@ class ApplicationAgent:
             logger.exception(
                 f"Error during application orchestration for ID {app_uuid}."
             )
+            # Try to persist failed state
+            try:
+                application = db.query(Application).filter_by(id=app_uuid).first()
+                if application:
+                    old_status = application.status
+                    application.status = "failed"
+                    application.failure_reason = f"Application orchestration exception: {e}"
+                    db.commit()
+                    from src.utils.status_logger import log_status_change
+                    log_status_change(str(application.id), old_status, "failed", application.failure_reason)
+            except Exception as persist_exc:
+                logger.error(f"Failed to persist failure status on exception: {persist_exc}")
+
             return ApplicationResult(
                 application_id=str(app_uuid),
                 status="failed",

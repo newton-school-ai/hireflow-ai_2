@@ -686,9 +686,13 @@ class QuotaSelectorPipeline:
                 )
                 if app:
                     if app.status != "confirmed":
+                        old_status = app.status
                         app.status = "planned"
                         app.match_score = s_item.match_score
                         app.skill_gaps = s_item.skill_gaps
+                        db.flush()
+                        from src.utils.status_logger import log_status_change
+                        log_status_change(str(app.id), old_status, "planned")
                 else:
                     app = Application(
                         user_id=u_id,
@@ -698,6 +702,9 @@ class QuotaSelectorPipeline:
                         status="planned",
                     )
                     db.add(app)
+                    db.flush()
+                    from src.utils.status_logger import log_status_change
+                    log_status_change(str(app.id), "None", "planned")
             db.commit()
 
         # Build metadata maps
@@ -818,7 +825,11 @@ class QuotaSelectorPipeline:
                 .first()
             )
             if rem_app and rem_app.status == "planned":
+                old_status = rem_app.status
                 rem_app.status = "matched"
+                db.flush()
+                from src.utils.status_logger import log_status_change
+                log_status_change(str(rem_app.id), old_status, "matched")
 
         # Set added app to 'planned'
         add_uuid = _safe_uuid(add_job_id)
@@ -829,7 +840,11 @@ class QuotaSelectorPipeline:
                 .first()
             )
             if add_app:
+                old_status = add_app.status
                 add_app.status = "planned"
+                db.flush()
+                from src.utils.status_logger import log_status_change
+                log_status_change(str(add_app.id), old_status, "planned")
             else:
                 # find match score from new_selected_dicts
                 add_score = 0.0
@@ -931,7 +946,11 @@ class QuotaSelectorPipeline:
                     .first()
                 )
                 if app:
+                    old_status = app.status
                     app.status = "confirmed"
+                    db.flush()
+                    from src.utils.status_logger import log_status_change
+                    log_status_change(str(app.id), old_status, "confirmed")
                 else:
                     app = Application(
                         user_id=u_id,
@@ -939,6 +958,9 @@ class QuotaSelectorPipeline:
                         status="confirmed",
                     )
                     db.add(app)
+                    db.flush()
+                    from src.utils.status_logger import log_status_change
+                    log_status_change(str(app.id), "None", "confirmed")
             except ValueError:
                 continue
 
