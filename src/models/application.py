@@ -77,6 +77,9 @@ class Application(Base):
     failure_reason: Mapped[str | None] = mapped_column(
         String(2048), nullable=True, default=None
     )
+    manual_apply_url: Mapped[str | None] = mapped_column(
+        String(2048), nullable=True, default=None
+    )
     status: Mapped[str] = mapped_column(
         Enum(
             "planned",
@@ -84,6 +87,7 @@ class Application(Base):
             "shortlisted",
             "confirmed",
             "resume_generated",
+            "applying",
             "applied",
             "failed",
             "withdrawn",
@@ -109,9 +113,65 @@ class Application(Base):
     job: Mapped["Job"] = relationship(  # noqa: F821
         "Job", back_populates="applications"
     )
+    status_history: Mapped[list["ApplicationStatusLog"]] = relationship(
+        "ApplicationStatusLog",
+        back_populates="application",
+        cascade="all, delete-orphan",
+        order_by="ApplicationStatusLog.timestamp.asc()",
+    )
 
     def __repr__(self) -> str:
         return (
             f"<Application(id={self.id!r}, user_id={self.user_id!r}, "
             f"job_id={self.job_id!r}, status={self.status!r})>"
+        )
+
+
+class ApplicationStatusLog(Base):
+    """Audit log entry recording an application status transition.
+
+    Attributes:
+        id: Unique log entry identifier (UUID).
+        application_id: FK to the application record.
+        previous_status: Status prior to the transition.
+        new_status: Status after the transition.
+        failure_reason: Optional explanation if transition is to a failed state.
+        manual_apply_url: Optional link for manual action if status is needs_action.
+        timestamp: Time when the status transition occurred.
+    """
+
+    __tablename__ = "application_status_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    application_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    previous_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    new_status: Mapped[str] = mapped_column(String(50), nullable=False)
+    failure_reason: Mapped[str | None] = mapped_column(
+        String(2048), nullable=True, default=None
+    )
+    manual_apply_url: Mapped[str | None] = mapped_column(
+        String(2048), nullable=True, default=None
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    # -- Relationships --
+    application: Mapped["Application"] = relationship(
+        "Application", back_populates="status_history"
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<ApplicationStatusLog(id={self.id!r}, application_id={self.application_id!r}, "
+            f"previous={self.previous_status!r}, new={self.new_status!r})>"
         )
