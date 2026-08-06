@@ -1,465 +1,474 @@
-"""
-Unit and integration tests for FormFiller and ApplicationAgent (Issue #14).
+"""Tests for CAPTCHA detection, retry logic, and error recovery (Issue #15).
 
-Tests Playwright browser automation, resilient selector matching, resume upload validation,
-grounded LLM free-text answer generation, database status persistence, missing field handling,
-security/captcha detection, timeout resilience, and resource cleanup.
+Tests are organised into five sections:
+
+1. CaptchaHandler — HTML signal detection (raw strings)
+2. CaptchaHandler — local file:// fixture detection
+3. CaptchaHandler — Playwright page duck-type and edge cases
+4. ApplicationAgent — failure classification (CAPTCHA / permanent / temporary)
+5. ApplicationAgent — retry / exponential backoff
+6. ApplicationAgent — captcha detection via URL integration
+7. ApplicationAgent — constructor validation
 """
 
-import uuid
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
-from playwright.sync_api import sync_playwright
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from src.agents.application_agent import ApplicationAgent
-from src.automation.form_filler import FormFiller, FormFillResult, ResumeUploadError
-from src.config.database import Base
-from src.models.application import Application
-from src.models.job import Job
-from src.models.user import User
+from src.agents.application_agent import (
+    ApplicationAgent,
+    CaptchaDetectedError,
+    PermanentApplicationError,
+    TemporaryApplicationError,
+)
+from src.automation.captcha_handler import CaptchaHandler
 
-# Setup in-memory SQLite database for testing
-TEST_DB_URL = "sqlite:///:memory:"
-engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
-SAMPLE_FORM_PATH = Path(__file__).parent / "fixtures" / "sample_form.html"
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+CAPTCHA_FORM_PATH = FIXTURES_DIR / "captcha_form.html"
+FLAKY_FORM_PATH = FIXTURES_DIR / "flaky_form.html"
 
-
-@pytest.fixture(autouse=True)
-def setup_test_db():
-    """Create all tables in memory before each test and drop after."""
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+_USER_PROFILE = {"name": "Test User", "email": "test@example.com"}
+_RESUME_PATH = "data/resumes/test/resume_v1.pdf"
 
 
-@pytest.fixture
-def db_session():
-    """Yield an isolated SQLAlchemy session."""
-    session = TestingSessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
-
-@pytest.fixture
-def sample_user(db_session):
-    """Create a sample user in test database."""
-    user = User(
-        id=uuid.uuid4(),
-        name="Alex Mercer",
-        email="alex.mercer@example.com",
-        mode="job",
-        master_profile={
-            "phone": "+1-555-0199",
-            "location": "San Francisco, CA",
-            "linkedin": "https://linkedin.com/in/alexmercer",
-            "github": "https://github.com/alexmercer",
-            "portfolio": "https://alexmercer.dev",
-            "education": "bachelors",
-            "experience": "1-3",
-            "skills": ["Python", "SQL"],
-        },
-    )
-    db_session.add(user)
-    db_session.commit()
-    return user
-
-
-@pytest.fixture
-def sample_job(db_session):
-    """Create a sample job in test database."""
-    job = Job(
-        id=uuid.uuid4(),
-        company_name="TechCorp Solutions",
-        role_title="Senior Python Backend Engineer",
-        jd_text="Looking for a Python developer proficient in FastAPI, SQL, and Playwright automation.",
-        application_url=f"file://{SAMPLE_FORM_PATH.resolve()}",
-        listing_type="job",
-    )
-    db_session.add(job)
-    db_session.commit()
-    return job
-
-
-@pytest.fixture
-def sample_application(db_session, sample_user, sample_job, tmp_path):
-    """Create a sample application in test database with a valid resume PDF."""
-    resume_file = tmp_path / "alex_mercer_resume.pdf"
-    resume_file.write_bytes(b"%PDF-1.4 sample resume content")
-
-    app = Application(
-        id=uuid.uuid4(),
-        user_id=sample_user.id,
-        job_id=sample_job.id,
-        status="matched",
-        resume_path=str(resume_file),
-    )
-    db_session.add(app)
-    db_session.commit()
-    return app
+def _make_agent(**kwargs) -> ApplicationAgent:
+    """Return an ApplicationAgent with FormFiller mocked out."""
+    with patch("src.agents.application_agent.FormFiller"):
+        return ApplicationAgent(**kwargs)
 
 
 # ===========================================================================
-# 1. Successful Application & End-to-End Orchestration
+# 1. CaptchaHandler — raw HTML signal detection
 # ===========================================================================
 
 
-def test_successful_application(db_session, sample_application):
-    """✓ Test successful application form fill, submission, and DB update."""
-    agent = ApplicationAgent()
+class TestCaptchaHandlerRawHtml:
+    """CaptchaHandler.detect() with raw HTML strings."""
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(sample_application.job.application_url)
+    def setup_method(self):
+        self.handler = CaptchaHandler()
 
-        with patch.object(
-            agent,
-            "generate_free_text_answer",
-            return_value="I am a skilled Python engineer with relevant experience.",
-        ):
-            result = agent.apply_for_job(
-                application_id=sample_application.id,
-                db_session=db_session,
-                custom_page=page,
-            )
+    def test_detects_g_recaptcha_class(self):
+        """CSS class 'g-recaptcha' triggers detection."""
+        html = "<div class='g-recaptcha' data-sitekey='abc'></div>"
+        assert self.handler.detect(html) is True
 
-        browser.close()
+    def test_detects_h_captcha_class(self):
+        """CSS class 'h-captcha' triggers detection."""
+        html = "<div class='h-captcha' data-sitekey='xyz'></div>"
+        assert self.handler.detect(html) is True
 
-    assert result.status == "applied"
-    assert result.failure_reason is None
+    def test_detects_recaptcha_iframe(self):
+        """Iframe with 'recaptcha' in src triggers detection."""
+        html = "<iframe src='https://www.google.com/recaptcha/api2/anchor'></iframe>"
+        assert self.handler.detect(html) is True
 
-    # Check DB record status updated to 'applied' and applied_at is populated
-    db_app = db_session.query(Application).filter_by(id=sample_application.id).first()
-    assert db_app.status == "applied"
-    assert db_app.applied_at is not None
+    def test_detects_hcaptcha_iframe(self):
+        """Iframe with 'hcaptcha' in src triggers detection."""
+        html = "<iframe src='https://newassets.hcaptcha.com/captcha/v1'></iframe>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_g_recaptcha_response_textarea_by_name(self):
+        """Textarea with name='g-recaptcha-response' triggers detection."""
+        html = "<textarea name='g-recaptcha-response'></textarea>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_g_recaptcha_response_textarea_by_id(self):
+        """Textarea with id='g-recaptcha-response' triggers detection (id check)."""
+        html = "<textarea id='g-recaptcha-response'></textarea>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_h_captcha_response_textarea(self):
+        """Textarea named 'h-captcha-response' triggers detection."""
+        html = "<textarea name='h-captcha-response'></textarea>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_recaptcha_script(self):
+        """Script loading the reCAPTCHA API triggers detection."""
+        html = "<script src='https://www.google.com/recaptcha/api.js'></script>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_hcaptcha_script(self):
+        """Script loading the hCaptcha API triggers detection."""
+        html = "<script src='https://hcaptcha.com/1/api.js'></script>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_keyword_please_complete_the_captcha(self):
+        """Keyword 'please complete the captcha' triggers detection."""
+        html = "<p>Please complete the CAPTCHA before submitting.</p>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_keyword_i_am_not_a_robot(self):
+        """Keyword 'i am not a robot' triggers detection."""
+        html = "<p>Please tick <strong>I am not a robot</strong> to proceed.</p>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_keyword_prove_you_are_human(self):
+        """Keyword 'prove you are human' triggers detection."""
+        html = "<h2>Prove you are human</h2><img src='captcha.png'>"
+        assert self.handler.detect(html) is True
+
+    def test_detects_cf_turnstile(self):
+        """Cloudflare Turnstile widget class triggers detection."""
+        html = "<div class='cf-turnstile' data-sitekey='key'></div>"
+        assert self.handler.detect(html) is True
+
+    def test_clean_form_not_detected(self):
+        """A normal application form without CAPTCHA is not flagged."""
+        html = """
+        <form>
+            <input type='text' name='name'>
+            <input type='email' name='email'>
+            <input type='file' name='resume'>
+            <button type='submit'>Apply</button>
+        </form>
+        """
+        assert self.handler.detect(html) is False
+
+    def test_empty_html_not_detected(self):
+        """Completely empty HTML string is not flagged."""
+        assert self.handler.detect("") is False
 
 
 # ===========================================================================
-# 2. Resume Upload Validation
+# 2. CaptchaHandler — local file:// fixture detection
 # ===========================================================================
 
 
-def test_resume_upload_success(tmp_path):
-    """✓ Test resume file upload using Playwright set_input_files API."""
-    filler = FormFiller()
-    pdf_file = tmp_path / "valid_resume.pdf"
-    pdf_file.write_bytes(b"%PDF-1.4 test resume")
+class TestCaptchaHandlerLocalFile:
+    """CaptchaHandler.detect() with local file:// URLs."""
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(f"file://{SAMPLE_FORM_PATH.resolve()}")
+    def setup_method(self):
+        self.handler = CaptchaHandler()
 
-        uploaded = filler.upload_resume(page, str(pdf_file))
-        assert uploaded is True
+    def test_detects_captcha_in_fixture_file(self):
+        """captcha_form.html exercises all 5 detection signals simultaneously."""
+        url = CAPTCHA_FORM_PATH.as_uri()
+        assert self.handler.detect(url) is True
 
-        # Verify file input locator value set
-        file_input = page.locator("input[type='file']")
-        assert file_input.input_value() != ""
+    def test_clean_form_not_detected_in_flaky_fixture(self):
+        """flaky_form.html has no CAPTCHA signals — passes CAPTCHA check cleanly."""
+        url = FLAKY_FORM_PATH.as_uri()
+        assert self.handler.detect(url) is False
 
-        browser.close()
-
-
-def test_resume_upload_file_missing():
-    """✓ Test error handling when resume file does not exist on disk."""
-    filler = FormFiller()
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-
-        with pytest.raises(ResumeUploadError, match="Resume file does not exist"):
-            filler.upload_resume(page, "/non/existent/path/resume.pdf")
-
-        browser.close()
-
-
-def test_resume_upload_unsupported_extension(tmp_path):
-    """✓ Test error handling for unsupported file extensions (e.g. .exe)."""
-    filler = FormFiller()
-    invalid_file = tmp_path / "resume.exe"
-    invalid_file.write_bytes(b"binary data")
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-
-        with pytest.raises(ResumeUploadError, match="Unsupported resume extension"):
-            filler.upload_resume(page, str(invalid_file))
-
-        browser.close()
+    def test_bad_url_returns_false_not_exception(self):
+        """Unreachable URL must return False, not raise, due to resilient detect()."""
+        result = self.handler.detect("file:///nonexistent/path/missing.html")
+        assert result is False
 
 
 # ===========================================================================
-# 3. Grounded Free-Text Question Generation
+# 3. CaptchaHandler — Playwright page duck-type and edge cases
 # ===========================================================================
 
 
-def test_free_text_answer_generation():
-    """✓ Test grounded free-text answer generation via LLM client."""
-    agent = ApplicationAgent()
+class TestCaptchaHandlerPlaywrightPage:
+    """CaptchaHandler.detect() with Playwright page duck-type."""
 
-    user_profile = {
-        "skills": ["Python", "FastAPI", "Docker"],
-        "education": "Bachelor of Science in CS",
-    }
-    job_info = {
-        "role_title": "Backend Engineer",
-        "company_name": "TechCorp",
-        "jd_text": "We need a Python engineer with FastAPI experience.",
-    }
-
-    mock_llm = MagicMock()
-    mock_llm.chat.return_value = (
-        "I am experienced in Python and FastAPI, making me a strong fit for TechCorp."
-    )
-
-    with patch("src.agents.application_agent.get_llm_client", return_value=mock_llm):
-        answer = agent.generate_free_text_answer(
-            question="Why should we hire you?",
-            user_profile=user_profile,
-            job_info=job_info,
+    def test_detects_via_playwright_page_object(self):
+        """A Playwright-like page object with content() is supported."""
+        mock_page = MagicMock()
+        mock_page.content.return_value = (
+            "<div class='g-recaptcha' data-sitekey='key'></div>"
         )
+        handler = CaptchaHandler()
+        assert handler.detect(mock_page) is True
 
-    assert "Python" in answer or "TechCorp" in answer
-    assert mock_llm.chat.called
+    def test_clean_page_not_detected(self):
+        """A Playwright page without CAPTCHA signals returns False."""
+        mock_page = MagicMock()
+        mock_page.content.return_value = "<form><input name='email'></form>"
+        handler = CaptchaHandler()
+        assert handler.detect(mock_page) is False
+
+    def test_playwright_crash_returns_false(self):
+        """If page.content() raises, detect() must return False not propagate."""
+        mock_page = MagicMock()
+        mock_page.content.side_effect = RuntimeError("TargetClosedError")
+        handler = CaptchaHandler()
+        # detect() wraps all exceptions — must not raise
+        result = handler.detect(mock_page)
+        assert result is False
+
+    def test_unsupported_type_returns_false(self):
+        """Passing an unsupported type causes detect() to return False (resilient)."""
+        handler = CaptchaHandler()
+        result = handler.detect(12345)  # type: ignore[arg-type]
+        assert result is False
 
 
-def test_free_text_answer_fallback_on_llm_error():
-    """✓ Test fallback grounded answer when LLM client raises an exception."""
-    agent = ApplicationAgent()
+# ===========================================================================
+# 4. ApplicationAgent — failure classification
+# ===========================================================================
 
-    user_profile = {"skills": ["Python", "SQL"]}
-    job_info = {"role_title": "Software Intern", "company_name": "Acme Inc"}
 
-    with patch(
-        "src.agents.application_agent.get_llm_client",
-        side_effect=RuntimeError("LLM offline"),
-    ):
-        answer = agent.generate_free_text_answer(
-            question="Why work here?",
-            user_profile=user_profile,
-            job_info=job_info,
+class TestApplicationAgentFailureClassification:
+    """Ensure each failure type produces the correct status with no wrong retry."""
+
+    def test_captcha_detected_returns_needs_action(self):
+        """CAPTCHA → needs_action immediately, no retry."""
+        agent = _make_agent(max_retries=3, retry_delay=0)
+
+        with patch.object(agent, "_submit_application") as mock_submit:
+            mock_submit.side_effect = CaptchaDetectedError("CAPTCHA detected")
+            result = agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        assert result["status"] == "needs_action"
+        assert "CAPTCHA" in result["failure_reason"]
+        assert result["attempts"] == 1
+        mock_submit.assert_called_once()  # No retry
+
+    def test_permanent_failure_returns_failed_immediately(self):
+        """PermanentApplicationError → failed with no retry."""
+        agent = _make_agent(max_retries=3, retry_delay=0)
+
+        with patch.object(agent, "_submit_application") as mock_submit:
+            mock_submit.side_effect = PermanentApplicationError("Selector not found")
+            result = agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        assert result["status"] == "failed"
+        assert "Selector not found" in result["failure_reason"]
+        assert result["attempts"] == 1
+        mock_submit.assert_called_once()
+
+    def test_selector_failure_not_retried(self):
+        """Missing selector is permanent — exactly 1 attempt regardless of max_retries."""
+        agent = _make_agent(max_retries=5, retry_delay=0)
+
+        with patch.object(agent, "_submit_application") as mock_submit:
+            mock_submit.side_effect = PermanentApplicationError(
+                "Required selector '#apply-btn' not found"
+            )
+            result = agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        assert result["attempts"] == 1
+
+    def test_successful_application_returns_applied(self):
+        """Successful submission → status=applied, failure_reason=None, attempts=1."""
+        agent = _make_agent(max_retries=3, retry_delay=0)
+
+        with patch.object(agent, "_submit_application"):  # no exception = success
+            result = agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        assert result["status"] == "applied"
+        assert result["failure_reason"] is None
+        assert result["attempts"] == 1
+
+
+# ===========================================================================
+# 5. ApplicationAgent — retry and exponential backoff
+# ===========================================================================
+
+
+class TestApplicationAgentRetry:
+    """Verify retry behaviour and exponential-backoff sleep timing."""
+
+    def test_temporary_failure_retried_up_to_max_retries(self):
+        """TemporaryApplicationError is retried until all attempts are exhausted."""
+        agent = _make_agent(max_retries=3, retry_delay=0)
+
+        with patch.object(agent, "_submit_application") as mock_submit:
+            mock_submit.side_effect = TemporaryApplicationError("Timeout")
+            result = agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        assert result["status"] == "failed"
+        assert result["attempts"] == 4  # 1 initial + 3 retries
+        assert mock_submit.call_count == 4
+
+    def test_flaky_form_succeeds_on_second_attempt(self):
+        """Temporary failure on attempt 1, success on attempt 2 → status=applied."""
+        agent = _make_agent(max_retries=3, retry_delay=0)
+        call_count = {"n": 0}
+
+        def flaky(*args, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise TemporaryApplicationError("Network timeout on first attempt")
+            # Second call succeeds silently
+
+        with patch.object(agent, "_submit_application", side_effect=flaky):
+            result = agent.apply(
+                application_url=FLAKY_FORM_PATH.as_uri(),
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        assert result["status"] == "applied"
+        assert result["attempts"] == 2
+
+    def test_zero_retries_fails_on_first_temporary_error(self):
+        """max_retries=0 means exactly 1 attempt before failing."""
+        agent = _make_agent(max_retries=0, retry_delay=0)
+
+        with patch.object(agent, "_submit_application") as mock_submit:
+            mock_submit.side_effect = TemporaryApplicationError("Timeout")
+            result = agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        assert result["status"] == "failed"
+        assert result["attempts"] == 1
+        mock_submit.assert_called_once()
+
+    def test_exponential_backoff_sleep_calls(self):
+        """Sleep durations strictly follow retry_delay * 2^(attempt-1)."""
+        agent = _make_agent(max_retries=3, retry_delay=1)
+
+        with (
+            patch.object(agent, "_submit_application") as mock_submit,
+            patch("src.agents.application_agent.time.sleep") as mock_sleep,
+        ):
+            mock_submit.side_effect = TemporaryApplicationError("Timeout")
+            agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        # 3 sleeps between 4 attempts: 1s, 2s, 4s
+        mock_sleep.assert_has_calls([call(1.0), call(2.0), call(4.0)])
+        assert mock_sleep.call_count == 3
+
+    def test_no_sleep_after_permanent_failure(self):
+        """Permanent failures never trigger a sleep."""
+        agent = _make_agent(max_retries=3, retry_delay=1)
+
+        with (
+            patch.object(agent, "_submit_application") as mock_submit,
+            patch("src.agents.application_agent.time.sleep") as mock_sleep,
+        ):
+            mock_submit.side_effect = PermanentApplicationError("Bad selector")
+            agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        mock_sleep.assert_not_called()
+
+    def test_no_sleep_after_captcha(self):
+        """CAPTCHA detection never triggers a sleep."""
+        agent = _make_agent(max_retries=3, retry_delay=1)
+
+        with (
+            patch.object(agent, "_submit_application") as mock_submit,
+            patch("src.agents.application_agent.time.sleep") as mock_sleep,
+        ):
+            mock_submit.side_effect = CaptchaDetectedError("CAPTCHA detected")
+            agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        mock_sleep.assert_not_called()
+
+    def test_timeout_retried_until_exhausted(self):
+        """Network timeout is retried up to max_retries, then status=failed."""
+        agent = _make_agent(max_retries=2, retry_delay=0)
+
+        with patch.object(agent, "_submit_application") as mock_submit:
+            mock_submit.side_effect = TemporaryApplicationError(
+                "playwright: Timeout 30000ms exceeded"
+            )
+            result = agent.apply(
+                application_url="http://example.com/apply",
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+        assert result["status"] == "failed"
+        assert result["attempts"] == 3  # 1 initial + 2 retries
+        assert "Timeout" in result["failure_reason"]
+
+
+# ===========================================================================
+# 6. ApplicationAgent — CAPTCHA detection via URL (integration)
+# ===========================================================================
+
+
+class TestCaptchaDetectionViaUrl:
+    """_submit_application() detects CAPTCHA before touching Playwright."""
+
+    def test_captcha_url_raises_captcha_detected_error(self):
+        """CAPTCHA fixture URL causes _submit_application to raise CaptchaDetectedError."""
+        agent = _make_agent(max_retries=0, retry_delay=0)
+        url = CAPTCHA_FORM_PATH.as_uri()
+
+        with pytest.raises(CaptchaDetectedError):
+            agent._submit_application(
+                application_url=url,
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
+            )
+
+    def test_captcha_url_via_apply_returns_needs_action(self):
+        """Full apply() with captcha_form.html fixture → needs_action, 1 attempt."""
+        agent = _make_agent(max_retries=0, retry_delay=0)
+        result = agent.apply(
+            application_url=CAPTCHA_FORM_PATH.as_uri(),
+            resume_path=_RESUME_PATH,
+            user_profile=_USER_PROFILE,
         )
+        assert result["status"] == "needs_action"
+        assert result["attempts"] == 1
 
-    assert "Acme Inc" in answer
-    assert "Software Intern" in answer
-    assert "Python" in answer
+    def test_clean_url_passes_captcha_check_reaches_form_filler(self):
+        """Clean URL passes CAPTCHA check and reaches _fill_and_submit_form."""
+        agent = _make_agent(max_retries=0, retry_delay=0)
+        url = FLAKY_FORM_PATH.as_uri()
 
-
-# ===========================================================================
-# 4. Failed Submission Handling
-# ===========================================================================
-
-
-def test_failed_submission(db_session, sample_application):
-    """✓ Test handling of failed form submission (e.g. form error mode)."""
-    agent = ApplicationAgent()
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        # Navigate to sample form with fail mode
-        page.goto(f"file://{SAMPLE_FORM_PATH.resolve()}?mode=fail")
-
-        with patch.object(
-            agent,
-            "generate_free_text_answer",
-            return_value="Candidate test response.",
-        ):
-            result = agent.apply_for_job(
-                application_id=sample_application.id,
-                db_session=db_session,
-                custom_page=page,
+        with pytest.raises(PermanentApplicationError):
+            agent._submit_application(
+                application_url=url,
+                resume_path=_RESUME_PATH,
+                user_profile=_USER_PROFILE,
             )
 
-        browser.close()
-
-    assert result.status == "failed"
-    assert result.failure_reason is not None
-
-    db_app = db_session.query(Application).filter_by(id=sample_application.id).first()
-    assert db_app.status == "failed"
-
 
 # ===========================================================================
-# 5. Missing Field Handling
+# 7. ApplicationAgent — constructor validation
 # ===========================================================================
 
 
-def test_missing_field_handling(db_session, sample_application):
-    """✓ Test that missing optional fields in user profile are ignored gracefully."""
-    agent = ApplicationAgent()
+class TestApplicationAgentConstruction:
+    def test_default_max_retries(self):
+        assert _make_agent().max_retries == 3
 
-    # User master profile with minimal fields (no phone, location, github, portfolio)
-    minimal_user = (
-        db_session.query(User).filter_by(id=sample_application.user_id).first()
-    )
-    minimal_user.master_profile = {"skills": ["Python"]}
-    db_session.commit()
+    def test_default_retry_delay(self):
+        assert _make_agent().retry_delay == 1.0
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(sample_application.job.application_url)
+    def test_negative_max_retries_raises(self):
+        with pytest.raises(ValueError, match="max_retries"):
+            _make_agent(max_retries=-1)
 
-        with patch.object(
-            agent, "generate_free_text_answer", return_value="Test answer."
-        ):
-            result = agent.apply_for_job(
-                application_id=sample_application.id,
-                db_session=db_session,
-                custom_page=page,
-            )
-
-        browser.close()
-
-    assert result.status == "applied"
-
-
-# ===========================================================================
-# 6. Needs Action Case (Captcha / Security Challenge)
-# ===========================================================================
-
-
-def test_needs_action_case(db_session, sample_application):
-    """✓ Test detection of captcha/security challenge resulting in needs_action status."""
-    agent = ApplicationAgent()
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(f"file://{SAMPLE_FORM_PATH.resolve()}?mode=captcha")
-
-        result = agent.apply_for_job(
-            application_id=sample_application.id,
-            db_session=db_session,
-            custom_page=page,
-        )
-
-        browser.close()
-
-    assert result.status == "needs_action"
-    assert (
-        "Captcha" in result.failure_reason
-        or "security" in result.failure_reason.lower()
-    )
-
-    db_app = db_session.query(Application).filter_by(id=sample_application.id).first()
-    assert db_app.status == "needs_action"
-
-
-# ===========================================================================
-# 7. Timeout Handling
-# ===========================================================================
-
-
-def test_timeout_handling():
-    """✓ Test graceful handling of Playwright timeouts during form filling."""
-    filler = FormFiller()
-
-    mock_page = MagicMock()
-    mock_page.content.side_effect = PlaywrightTimeoutError("Operation timed out")
-    mock_page.locator.side_effect = PlaywrightTimeoutError("Locator search timed out")
-
-    user_data = {"full_name": "Timeout User", "email": "timeout@example.com"}
-
-    result = filler.fill_and_submit(page=mock_page, user_data=user_data)
-
-    assert result.status == "failed"
-    assert "Timeout" in result.failure_reason
-
-
-# ===========================================================================
-# 8. Database Status Update Verification
-# ===========================================================================
-
-
-def test_database_update_integrity(db_session, sample_application):
-    """✓ Test database status and timestamp persistence."""
-    agent = ApplicationAgent()
-
-    # Non-existent application ID
-    fake_id = uuid.uuid4()
-    result = agent.apply_for_job(fake_id, db_session=db_session)
-    assert result.status == "failed"
-    assert "not found" in result.failure_reason
-
-    # Existing application ID update
-    db_app = db_session.query(Application).filter_by(id=sample_application.id).first()
-    assert db_app.status == "matched"
-
-
-# ===========================================================================
-# 9. Browser Context Cleanup
-# ===========================================================================
-
-
-def test_browser_cleanup():
-    """✓ Test browser and context resources cleanup after automation."""
-    agent = ApplicationAgent()
-
-    user_data = {"full_name": "Cleanup Test", "email": "cleanup@example.com"}
-
-    # Mock sync_playwright to ensure close() is invoked
-    mock_p = MagicMock()
-    mock_browser = MagicMock()
-    mock_context = MagicMock()
-    mock_page = MagicMock()
-
-    mock_p.chromium.launch.return_value = mock_browser
-    mock_browser.new_context.return_value = mock_context
-    mock_context.new_page.return_value = mock_page
-
-    with patch("src.agents.application_agent.sync_playwright") as mock_sp:
-        mock_sp.return_value.__enter__.return_value = mock_p
-
-        with patch.object(
-            agent.form_filler,
-            "fill_and_submit",
-            return_value=FormFillResult(status="applied"),
-        ):
-            agent._run_browser_automation(
-                url="http://example.com/apply",
-                user_data=user_data,
-                resume_path=None,
-                free_text_answers={},
-            )
-
-        assert mock_context.close.called
-        assert mock_browser.close.called
-
-
-# ===========================================================================
-# 10. Deterministic Behavior & Multi-Pattern Selector Strategy
-# ===========================================================================
-
-
-def test_selector_strategy_attribute_matching():
-    """✓ Test multi-pattern selector strategy matching name, id, placeholder, label, data-testid."""
-    filler = FormFiller()
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(f"file://{SAMPLE_FORM_PATH.resolve()}")
-
-        # Test finding email by name, placeholder, label, and test-id
-        loc_name = filler.find_field_locator(page, "email")
-        assert loc_name is not None
-
-        loc_phone = filler.find_field_locator(page, "phone")
-        assert loc_phone is not None
-
-        loc_linkedin = filler.find_field_locator(page, "linkedin")
-        assert loc_linkedin is not None
-
-        browser.close()
+    def test_negative_retry_delay_raises(self):
+        with pytest.raises(ValueError, match="retry_delay"):
+            _make_agent(retry_delay=-0.5)

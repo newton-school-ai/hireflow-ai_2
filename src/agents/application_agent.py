@@ -7,6 +7,7 @@ browser automation via FormFiller, and updating application status in DB.
 """
 
 import logging
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ from typing import Any
 from playwright.sync_api import sync_playwright
 from sqlalchemy.orm import Session
 
+from src.automation.captcha_handler import CaptchaHandler
 from src.automation.form_filler import FormFiller
 from src.config.database import SessionLocal
 from src.models.application import Application
@@ -23,6 +25,44 @@ from src.models.user import User
 from src.utils.llm_client import get_llm_client
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Custom exception hierarchy (Issue #15)
+# ---------------------------------------------------------------------------
+
+
+class ApplicationError(Exception):
+    """Base class for application agent errors."""
+
+
+class CaptchaDetectedError(ApplicationError):
+    """Raised when a CAPTCHA challenge is detected on the page.
+
+    This is a *permanent* failure.  The application is flagged for manual
+    action; the agent must never attempt to solve CAPTCHAs.
+    """
+
+
+class PermanentApplicationError(ApplicationError):
+    """Raised for failures that should not be retried.
+
+    Examples:
+        - Required form selector not found.
+        - Unsupported or unrecognised form type.
+        - Validation errors from the career portal.
+        - Malformed page.
+    """
+
+
+class TemporaryApplicationError(ApplicationError):
+    """Raised for failures that may succeed on a subsequent attempt.
+
+    Examples:
+        - Network timeout or connection reset.
+        - Playwright navigation timeout.
+        - Transient HTTP 5xx response.
+    """
 
 
 @dataclass
@@ -43,10 +83,291 @@ class ApplicationResult:
 
 
 class ApplicationAgent:
-    """Orchestrates job application form filling, LLM integration, and status updates."""
+    """Orchestrates job application form filling, LLM integration, and status updates.
 
-    def __init__(self, form_filler: FormFiller | None = None) -> None:
+    Also implements retry logic and CAPTCHA-aware error recovery (Issue #15).
+
+    Args:
+        form_filler: Optional custom FormFiller instance.
+        max_retries: Max retry attempts for temporary failures (default 3).
+        retry_delay: Base sleep in seconds; actual = ``retry_delay * 2^attempt``
+            (default 1).
+    """
+
+    def __init__(
+        self,
+        form_filler: FormFiller | None = None,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
+    ) -> None:
+        if max_retries < 0:
+            raise ValueError("max_retries must be >= 0")
+        if retry_delay < 0:
+            raise ValueError("retry_delay must be >= 0")
         self.form_filler = form_filler or FormFiller()
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+        self.captcha_handler = CaptchaHandler()
+
+    # ------------------------------------------------------------------
+    # Issue #15: Retry + CAPTCHA-aware apply()
+    # ------------------------------------------------------------------
+
+    def apply(
+        self,
+        application_url: str,
+        resume_path: str,
+        user_profile: dict[str, Any],
+        application_id: str | uuid.UUID | None = None,
+    ) -> dict[str, Any]:
+        """Submit a job application with exponential-backoff retry.
+
+        Classifies failures as *temporary* (retry) or *permanent* (fail-fast).
+        Never crashes the outer application run — always returns a structured
+        dict regardless of outcome.
+
+        Args:
+            application_url: URL of the job application form.
+            resume_path: Path to the tailored resume PDF.
+            user_profile: Dict with at minimum ``name`` and ``email``.
+            application_id: Optional ``Application.id`` to update in the DB.
+
+        Returns:
+            ::
+
+                {
+                    "status": "applied" | "failed" | "needs_action",
+                    "failure_reason": str | None,
+                    "attempts": int,
+                }
+        """
+        logger.info(
+            "ApplicationAgent.apply: starting — url=%s max_retries=%d",
+            application_url,
+            self.max_retries,
+        )
+        result = self._execute_with_retry(
+            application_url=application_url,
+            resume_path=resume_path,
+            user_profile=user_profile,
+        )
+        if application_id is not None:
+            self._persist_result(application_id, result)
+        logger.info(
+            "ApplicationAgent.apply: finished — status=%s attempts=%d",
+            result["status"],
+            result["attempts"],
+        )
+        return result
+
+    def _execute_with_retry(
+        self,
+        application_url: str,
+        resume_path: str,
+        user_profile: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Attempt the application with exponential-backoff retries.
+
+        Permanent failures bypass retries immediately.  Temporary failures
+        are retried up to ``self.max_retries`` times.
+
+        Returns:
+            Structured result dict (see :meth:`apply`).
+        """
+        last_reason: str = "Unknown error"
+        total_attempts = self.max_retries + 1  # initial attempt + retries
+
+        for attempt in range(1, total_attempts + 1):
+            logger.info(
+                "ApplicationAgent: attempt %d/%d for %s",
+                attempt,
+                total_attempts,
+                application_url,
+            )
+            try:
+                self._submit_application(
+                    application_url=application_url,
+                    resume_path=resume_path,
+                    user_profile=user_profile,
+                )
+                logger.info("ApplicationAgent: application submitted successfully")
+                return {
+                    "status": "applied",
+                    "failure_reason": None,
+                    "attempts": attempt,
+                }
+
+            except CaptchaDetectedError as exc:
+                reason = str(exc) or "CAPTCHA detected"
+                logger.warning(
+                    "ApplicationAgent: CAPTCHA detected on attempt %d — "
+                    "flagging for manual action",
+                    attempt,
+                )
+                return {
+                    "status": "needs_action",
+                    "failure_reason": reason,
+                    "attempts": attempt,
+                }
+
+            except PermanentApplicationError as exc:
+                reason = str(exc) or "Permanent failure"
+                logger.error(
+                    "ApplicationAgent: permanent failure on attempt %d — "
+                    "not retrying: %s",
+                    attempt,
+                    reason,
+                )
+                return {
+                    "status": "failed",
+                    "failure_reason": reason,
+                    "attempts": attempt,
+                }
+
+            except TemporaryApplicationError as exc:
+                last_reason = str(exc) or "Temporary failure"
+                logger.warning(
+                    "ApplicationAgent: temporary failure on attempt %d: %s",
+                    attempt,
+                    last_reason,
+                )
+                if attempt < total_attempts:
+                    sleep_time = self.retry_delay * (2 ** (attempt - 1))
+                    logger.info(
+                        "ApplicationAgent: sleeping %.1fs before retry %d/%d",
+                        sleep_time,
+                        attempt + 1,
+                        total_attempts,
+                    )
+                    time.sleep(sleep_time)
+                else:
+                    logger.error(
+                        "ApplicationAgent: exhausted all %d attempts — marking failed",
+                        total_attempts,
+                    )
+
+            except Exception as exc:  # noqa: BLE001
+                # Unexpected exception (e.g. NotImplementedError when Playwright
+                # integration is not yet wired).  Treat as a permanent failure so
+                # apply() always returns a structured result and never crashes the
+                # outer application run.
+                reason = f"Unexpected error: {type(exc).__name__}: {exc}"
+                logger.error(
+                    "ApplicationAgent: unexpected exception on attempt %d — "
+                    "treating as permanent failure: %s",
+                    attempt,
+                    reason,
+                )
+                return {
+                    "status": "failed",
+                    "failure_reason": reason,
+                    "attempts": attempt,
+                }
+
+        return {
+            "status": "failed",
+            "failure_reason": f"Failed after {total_attempts} attempt(s): {last_reason}",
+            "attempts": total_attempts,
+        }
+
+    def _submit_application(
+        self,
+        application_url: str,
+        resume_path: str,
+        user_profile: dict[str, Any],
+    ) -> None:
+        """Single submission attempt — integration point for Playwright.
+
+        Raises typed exceptions so :meth:`_execute_with_retry` can classify
+        failures without inspecting strings.
+
+        Raises:
+            CaptchaDetectedError: CAPTCHA present on the page.
+            PermanentApplicationError: Selector missing / unsupported form.
+            TemporaryApplicationError: Timeout or transient network error.
+        """
+        try:
+            if self.captcha_handler.detect(application_url):
+                raise CaptchaDetectedError("CAPTCHA detected")
+        except CaptchaDetectedError:
+            raise
+        except RuntimeError as exc:
+            raise TemporaryApplicationError(
+                f"Could not load page for CAPTCHA check: {exc}"
+            ) from exc
+
+        # Playwright form interaction (wired in Issue #14 via FormFiller).
+        # Until Playwright is integrated, this raises NotImplementedError —
+        # which is a known, permanent state, not an unexpected error.
+        try:
+            self._fill_and_submit_form(
+                application_url=application_url,
+                resume_path=resume_path,
+                user_profile=user_profile,
+            )
+        except NotImplementedError as exc:
+            raise PermanentApplicationError(str(exc)) from exc
+
+    def _fill_and_submit_form(
+        self,
+        application_url: str,
+        resume_path: str,
+        user_profile: dict[str, Any],
+    ) -> None:
+        """Fill and submit the form via Playwright.
+
+        Subclasses or tests override this method to inject behaviour.
+
+        Raises:
+            PermanentApplicationError: If a required selector is missing.
+            TemporaryApplicationError: On Playwright/network timeouts.
+        """
+        raise NotImplementedError(
+            "_fill_and_submit_form must be overridden by a Playwright "
+            "subclass or mocked in tests."
+        )
+
+    def _persist_result(
+        self,
+        application_id: str | uuid.UUID,
+        result: dict[str, Any],
+    ) -> None:
+        """Persist the terminal application status to the database.
+
+        Args:
+            application_id: The ``Application.id`` to update.
+            result: Structured result dict from :meth:`_execute_with_retry`.
+        """
+        db = SessionLocal()
+        try:
+            app = (
+                db.query(Application)
+                .filter(Application.id == str(application_id))
+                .first()
+            )
+            if app is None:
+                logger.warning(
+                    "ApplicationAgent: Application %s not found — skipping DB update",
+                    application_id,
+                )
+                return
+            app.status = result["status"]
+            if hasattr(app, "failure_reason"):
+                app.failure_reason = result.get("failure_reason")
+            db.commit()
+            logger.info(
+                "ApplicationAgent: DB updated — id=%s status=%s",
+                application_id,
+                result["status"],
+            )
+        except Exception as exc:
+            db.rollback()
+            logger.error(
+                "ApplicationAgent: DB update failed for %s: %s", application_id, exc
+            )
+            raise
+        finally:
+            db.close()
 
     # ------------------------------------------------------------------
     # LLM Question Answering

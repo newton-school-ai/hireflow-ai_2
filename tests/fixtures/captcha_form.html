@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Job Application — Security Check</title>
+    <!-- reCAPTCHA API script (canonical pattern used by Google's widget) -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+    <h1>Software Engineer — Apply Now</h1>
+
+    <!-- Keyword detection: plain text that triggers _check_keywords() -->
+    <p>Please complete the CAPTCHA before submitting your application.</p>
+
+    <form action="/submit" method="post">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+
+        <!--
+            Google reCAPTCHA v2 widget.
+            Covers three independent detection signals simultaneously:
+              1. CSS class "g-recaptcha"     → _check_css_classes()
+              2. data-sitekey attribute      → _check_keywords()
+        -->
+        <div
+            class="g-recaptcha"
+            data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI">
+        </div>
+
+        <!--
+            Embedded iframe that Google injects at runtime.
+            Included here statically so _check_iframes() fires on the fixture.
+        -->
+        <iframe
+            src="https://www.google.com/recaptcha/api2/anchor?k=test-site-key"
+            title="reCAPTCHA"
+            frameborder="0">
+        </iframe>
+
+        <!-- Hidden textarea that reCAPTCHA populates with the response token -->
+        <!-- Covers _check_textareas() via name AND id -->
+        <textarea
+            name="g-recaptcha-response"
+            id="g-recaptcha-response"
+            style="display:none;">
+        </textarea>
+
+        <button type="submit">Submit Application</button>
+    </form>
+</body>
+</html>

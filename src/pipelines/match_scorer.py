@@ -579,7 +579,7 @@ def score_all_jobs(
     if not user:
         raise ValueError(f"User with ID {user_id} not found.")
 
-    jobs = db.query(Job).filter(Job.is_spam == False).all()
+    jobs = db.query(Job).filter(Job.is_spam.is_(False)).all()
 
     results: list[dict[str, Any]] = []
     for job in jobs:

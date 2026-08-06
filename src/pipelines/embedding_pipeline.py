@@ -133,7 +133,7 @@ class EmbeddingPipeline:
 
             # Query non-spam jobs with non-empty job descriptions
             query = session.query(Job).filter(
-                Job.is_spam == False,
+                Job.is_spam.is_(False),
                 Job.jd_text.isnot(None),
                 Job.jd_text != "",
             )
