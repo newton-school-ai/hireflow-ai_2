@@ -890,13 +890,13 @@ Respond with a JSON array only, no extra text:
             # 2. Substring match or superstring match -> Strong / Moderate
             # e.g., user has "React.js" and JD has "React", or user has "Python 3" and JD has "Python"
             direct_alias_match = False
-            for u_lower in user_skills_lower:
+            for u_lower in user_skills_lower.keys():
                 if (
                     u_lower == jd_lower
                     or (len(jd_lower) >= 3 and jd_lower in u_lower)
                     or (len(u_lower) >= 3 and u_lower in jd_lower)
                 ) and self._is_equivalent_tech(u_lower, jd_lower):
-                    # Check if essentially the exact same technology (e.g. react vs react.js, node vs node.js)
+
                     if jd_lower not in seen_strong_lower:
                         strong.append(jd_skill)
                         seen_strong_lower.add(jd_lower)
