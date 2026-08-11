@@ -1,9 +1,6 @@
 """
-Unit tests for PrepGuideAgent - Interview Round Predictor and Topic Analyzer.
-
-Tests explicit round extraction from JD text, fallback heuristic predictions
-across different listing types (internship vs. full-time) and company stages,
-skill topic categorization (strong, moderate, gaps), and resilience edge cases.
+Unit tests for PrepGuideAgent - Interview Round Predictor, Topic Analyzer,
+Resource Finder, and Mock Question Generator (Issue #18).
 """
 
 from unittest.mock import MagicMock
@@ -44,7 +41,10 @@ def test_predict_rounds_explicit_two_rounds(agent):
 
     assert rounds[0]["number"] == 1
     assert rounds[0]["type"] == "technical"
-    assert "problem solving" in rounds[0]["focus"].lower() or "programming" in rounds[0]["focus"].lower()
+    assert (
+        "problem solving" in rounds[0]["focus"].lower()
+        or "programming" in rounds[0]["focus"].lower()
+    )
     assert rounds[0]["duration"]
 
     assert rounds[1]["number"] == 2
@@ -273,3 +273,173 @@ def test_prep_guide_case_insensitivity(agent):
     assert "python" in topics["strong"]
     assert "FastAPI" in topics["strong"]
     assert topics["gaps"] == []
+
+
+# ===========================================================================
+# 5. Resource Finder Tests (Issue #18)
+# ===========================================================================
+
+
+def test_find_resources_multiple_topics(agent, monkeypatch):
+    """Verify find_resources returns 2-3 resources per topic with correct structure and no duplicate URLs."""
+    # Mock link accessibility check to return True
+    monkeypatch.setattr(agent, "_is_url_accessible", lambda url: True)
+
+    topics = ["TypeScript", "Docker", "LangChain"]
+    result = agent.find_resources(topics)
+
+    assert isinstance(result, dict)
+    assert set(result.keys()) == set(topics)
+
+    all_urls = []
+    valid_types = {"docs", "video", "article", "course"}
+
+    for resources in result.values():
+        assert 2 <= len(resources) <= 3
+        for res in resources:
+            assert "title" in res
+            assert "url" in res
+            assert "type" in res
+            assert res["type"] in valid_types
+            assert res["url"].startswith("http")
+            all_urls.append(res["url"])
+
+    # Ensure no duplicate URLs across resources
+    assert len(all_urls) == len(set(all_urls))
+
+
+def test_find_resources_broken_link_handling(agent, monkeypatch):
+    """Verify broken/inaccessible links are skipped and working alternatives returned without crashing."""
+    broken_url = "https://docs.typescriptlang.org/broken-page-404"
+    working_url_1 = "https://www.typescriptlang.org/docs/"
+    working_url_2 = "https://www.freecodecamp.org/news/learn-typescript/"
+
+    def mock_is_accessible(url: str) -> bool:
+        return url != broken_url
+
+    monkeypatch.setattr(agent, "_is_url_accessible", mock_is_accessible)
+
+    def mock_fetch(topic: str, seen_urls: set[str]):
+        raw_candidates = [
+            {"title": "Broken Page", "url": broken_url, "type": "docs"},
+            {"title": "TS Docs", "url": working_url_1, "type": "docs"},
+            {"title": "TS Course", "url": working_url_2, "type": "course"},
+        ]
+        return [c for c in raw_candidates if mock_is_accessible(c["url"])]
+
+    monkeypatch.setattr(agent, "_fetch_resources_for_topic", mock_fetch)
+
+    result = agent.find_resources(["TypeScript"])
+    ts_resources = result["TypeScript"]
+
+    urls = [r["url"] for r in ts_resources]
+    assert broken_url not in urls
+    assert working_url_1 in urls
+    assert len(ts_resources) >= 2
+
+
+def test_find_resources_empty_inputs(agent):
+    """Verify find_resources handles None and empty lists gracefully."""
+    assert agent.find_resources(None) == {}
+    assert agent.find_resources([]) == {}
+    assert agent.find_resources(["", "  "]) == {}
+
+
+# ===========================================================================
+# 6. Mock Question Generator Tests (Issue #18)
+# ===========================================================================
+
+
+def test_generate_questions_internship():
+    """Verify mock question generation for an internship JD produces grounded, lighter-depth questions."""
+    jd_text = (
+        "We are looking for an AI Engineering Intern to work with Python, LangGraph, "
+        "FastAPI, and multi-agent workflows. Experience with LLMs and RAG is a plus."
+    )
+    mock_llm = MagicMock()
+    mock_llm.chat.return_value = """
+    [
+        {"category": "technical", "question": "In Python and FastAPI, how would you structure a multi-agent workflow using LangGraph for the internship project?"},
+        {"category": "behavioral", "question": "Can you describe a time when you learned a new AI framework like LangGraph for a class or side project?"},
+        {"category": "design", "question": "How would you design a simple REST endpoint in FastAPI to receive user queries and invoke a LangGraph agent?"}
+    ]
+    """
+    agent_inst = PrepGuideAgent(llm_client=mock_llm)
+
+    questions = agent_inst.generate_questions(
+        jd_text=jd_text,
+        company_name="AgenticAI",
+        listing_type="internship",
+        round_types=["technical", "behavioral", "system_design"],
+    )
+
+    assert len(questions) == 3
+    categories = {q["category"] for q in questions}
+    assert "technical" in categories
+    assert "behavioral" in categories
+
+    # Verify questions are grounded in JD technologies
+    all_text = " ".join(q["question"] for q in questions)
+    assert "LangGraph" in all_text or "Python" in all_text or "FastAPI" in all_text
+
+
+def test_generate_questions_fulltime():
+    """Verify mock question generation for a full-time job JD produces deeper technical/design questions."""
+    jd_text = (
+        "Senior Backend Engineer - Scalable Agentic Systems. "
+        "Must have deep expertise in Python, LangChain, PostgreSQL, Docker, and Kubernetes. "
+        "You will design high-throughput asynchronous services and distributed agent orchestration."
+    )
+    mock_llm = MagicMock()
+    mock_llm.chat.return_value = """
+    [
+        {"category": "technical", "question": "How would you debug state loss and race conditions in a distributed LangChain agent pipeline running across multiple Kubernetes pods?"},
+        {"category": "behavioral", "question": "Describe a scenario where you had to make trade-offs between system latency and model accuracy in a production AI system."},
+        {"category": "design", "question": "How would you architect a fault-tolerant, scalable backend service using Python, PostgreSQL, and Docker to support high-throughput agent workflows?"}
+    ]
+    """
+    agent_inst = PrepGuideAgent(llm_client=mock_llm)
+
+    questions = agent_inst.generate_questions(
+        jd_text=jd_text,
+        company_name="ScaleTech",
+        listing_type="job",
+        round_types=["technical", "system_design"],
+    )
+
+    assert len(questions) >= 2
+    categories = {q["category"] for q in questions}
+    assert "technical" in categories
+    assert "design" in categories
+
+    # Verify deeper system/architecture questions for full-time job
+    design_questions = [q["question"] for q in questions if q["category"] == "design"]
+    assert len(design_questions) > 0
+    assert any(
+        "architect" in q.lower() or "scalable" in q.lower() or "system" in q.lower()
+        for q in design_questions
+    )
+
+
+def test_generate_questions_heuristic_fallback():
+    """Verify generate_questions falls back gracefully to heuristic engine when LLM client is None."""
+    agent_no_llm = PrepGuideAgent(llm_client=None)
+    agent_no_llm.llm_client = None
+
+    jd_text = "Software Engineer position requiring experience with Python, FastAPI, Docker, and PostgreSQL."
+
+    questions = agent_no_llm.generate_questions(
+        jd_text=jd_text,
+        company_name="Acme Systems",
+        listing_type="job",
+        round_types=["technical", "founder"],
+    )
+
+    assert isinstance(questions, list)
+    assert len(questions) > 0
+
+    for q in questions:
+        assert "category" in q
+        assert "question" in q
+        assert q["category"] in {"technical", "behavioral", "design"}
+        assert len(q["question"]) > 10
