@@ -890,7 +890,7 @@ Respond with a JSON array only, no extra text:
             # 2. Substring match or superstring match -> Strong / Moderate
             # e.g., user has "React.js" and JD has "React", or user has "Python 3" and JD has "Python"
             direct_alias_match = False
-            for u_lower in user_skills_lower.keys():
+            for u_lower in user_skills_lower:
                 if (
                     u_lower == jd_lower
                     or (len(jd_lower) >= 3 and jd_lower in u_lower)
