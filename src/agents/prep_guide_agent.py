@@ -288,7 +288,7 @@ class PrepGuideAgent:
         else:
             try:
                 self.llm_client = get_llm_client()
-            except ValueError as e:
+            except (ImportError, ValueError, RuntimeError, KeyError) as e:
                 logger.debug(f"LLM client unavailable, using heuristic engine: {e}")
                 self.llm_client = None
 
