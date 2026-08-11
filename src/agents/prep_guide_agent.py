@@ -288,7 +288,7 @@ class PrepGuideAgent:
         else:
             try:
                 self.llm_client = get_llm_client()
-            except Exception as e:
+            except ValueError as e:
                 logger.debug(f"LLM client unavailable, using heuristic engine: {e}")
                 self.llm_client = None
 
@@ -345,7 +345,7 @@ class PrepGuideAgent:
             from tavily import TavilyClient
 
             return TavilyClient(api_key=api_key)
-        except Exception as e:
+        except (ImportError, ValueError) as e:
             logger.debug(f"Tavily client init failed: {e}")
             return None
 
@@ -354,7 +354,7 @@ class PrepGuideAgent:
         if self._tavily is not None:
             try:
                 return self._tavily_search(topic)
-            except Exception as e:
+            except (RuntimeError, OSError, ValueError) as e:
                 logger.warning(
                     f"Tavily search failed for '{topic}': {e}. Using heuristic fallback."
                 )
@@ -417,7 +417,7 @@ class PrepGuideAgent:
             # Some servers (e.g. Cloudflare) reject HEAD — try GET with stream
             r2 = httpx.get(url, timeout=timeout, follow_redirects=True, headers=headers)
             return r2.status_code < 400
-        except Exception:
+        except (httpx.HTTPError, OSError):
             return False
 
     def _infer_resource_type(self, url: str) -> str:
@@ -557,7 +557,7 @@ class PrepGuideAgent:
                 return self._llm_generate_questions(
                     clean_jd, company, is_internship, question_count, categories
                 )
-            except Exception as e:
+            except (TypeError, ValueError, json.JSONDecodeError) as e:
                 logger.warning(
                     f"LLM question generation failed: {e}. Using heuristic fallback."
                 )
@@ -624,7 +624,7 @@ Respond with a JSON array only, no extra text:
             cleaned = cleaned.removesuffix("```").strip()
             questions = json.loads(cleaned)
         else:
-            raise ValueError(f"Unexpected LLM response type: {type(raw)}")
+            raise TypeError(f"Unexpected LLM response type: {type(raw)}")
 
         validated: list[dict[str, str]] = []
         for item in questions:
@@ -890,19 +890,18 @@ Respond with a JSON array only, no extra text:
             # 2. Substring match or superstring match -> Strong / Moderate
             # e.g., user has "React.js" and JD has "React", or user has "Python 3" and JD has "Python"
             direct_alias_match = False
-            for u_lower, u_orig in user_skills_lower.items():
+            for u_lower in user_skills_lower:
                 if (
                     u_lower == jd_lower
                     or (len(jd_lower) >= 3 and jd_lower in u_lower)
                     or (len(u_lower) >= 3 and u_lower in jd_lower)
-                ):
+                ) and self._is_equivalent_tech(u_lower, jd_lower):
                     # Check if essentially the exact same technology (e.g. react vs react.js, node vs node.js)
-                    if self._is_equivalent_tech(u_lower, jd_lower):
-                        if jd_lower not in seen_strong_lower:
-                            strong.append(jd_skill)
-                            seen_strong_lower.add(jd_lower)
-                        direct_alias_match = True
-                        break
+                    if jd_lower not in seen_strong_lower:
+                        strong.append(jd_skill)
+                        seen_strong_lower.add(jd_lower)
+                    direct_alias_match = True
+                    break
 
             if direct_alias_match:
                 continue
