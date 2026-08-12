@@ -27,7 +27,7 @@ load_dotenv()
 # Import all models so their tables are registered on Base.metadata.
 # This import MUST come after sys.path manipulation.
 # ---------------------------------------------------------------------------
-from src.models import Base
+from src.models import Base 
 
 # ---------------------------------------------------------------------------
 # Alembic Config object — provides access to values in alembic.ini.
