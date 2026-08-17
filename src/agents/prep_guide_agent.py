@@ -288,7 +288,7 @@ class PrepGuideAgent:
         else:
             try:
                 self.llm_client = get_llm_client()
-            except ValueError as e:
+            except (ImportError, ValueError, RuntimeError, KeyError) as e:
                 logger.debug(f"LLM client unavailable, using heuristic engine: {e}")
                 self.llm_client = None
 
@@ -896,7 +896,7 @@ Respond with a JSON array only, no extra text:
                     or (len(jd_lower) >= 3 and jd_lower in u_lower)
                     or (len(u_lower) >= 3 and u_lower in jd_lower)
                 ) and self._is_equivalent_tech(u_lower, jd_lower):
-                    # Check if essentially the exact same technology (e.g. react vs react.js, node vs node.js)
+
                     if jd_lower not in seen_strong_lower:
                         strong.append(jd_skill)
                         seen_strong_lower.add(jd_lower)
