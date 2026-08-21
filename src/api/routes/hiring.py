@@ -78,12 +78,12 @@ async def generate_shortlist(request: Request):
                 try:
                     parsed_applicants = json.loads(applicants_json)
                     if not isinstance(parsed_applicants, list):
-                        raise ValueError
-                except ValueError:
+                        raise TypeError("Applicants JSON must be a list")
+                except (json.JSONDecodeError, TypeError) as exc:
                     raise HTTPException(
                         status_code=400,
-                        detail="'applicants' must be a valid JSON array.",
-                    )
+                        detail=f"Invalid applicants JSON: {exc}",
+                    ) from exc
             elif applicants_csv and hasattr(applicants_csv, "filename"):
                 if not applicants_csv.filename.endswith(".csv"):
                     raise HTTPException(
@@ -122,11 +122,13 @@ async def generate_shortlist(request: Request):
                 role_title=role_title,
             )
             return result
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-        except Exception as e:
-            logger.error(f"Error during shortlist generation: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            logger.exception("Error during shortlist generation")
+            raise HTTPException(
+                status_code=500, detail="Internal server error"
+            ) from exc
 
     finally:
         # Cleanup temp file
