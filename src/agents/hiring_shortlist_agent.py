@@ -5,6 +5,8 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy.orm import Session
+
 from src.config.database import SessionLocal
 from src.models.job import Job
 from src.models.shortlist import Shortlist
@@ -116,8 +118,13 @@ def _normalize_applicant(app: dict[str, Any]) -> dict[str, Any]:
 
 
 class HiringShortlistAgent:
-    def __init__(self, embedding_pipeline: EmbeddingPipeline | None = None):
+    def __init__(
+        self,
+        embedding_pipeline: EmbeddingPipeline | None = None,
+        db: Session | None = None,
+    ):
         self.embedding_pipeline = embedding_pipeline
+        self.db = db
 
     def shortlist(
         self,
@@ -226,7 +233,8 @@ class HiringShortlistAgent:
         }
 
         # Persist to DB using minimal Shortlist model
-        session = SessionLocal()
+        session = self.db if self.db is not None else SessionLocal()
+        owns_session = self.db is None
         try:
             sl_record = Shortlist(
                 company_name=company_name,
@@ -241,6 +249,7 @@ class HiringShortlistAgent:
             session.rollback()
             logger.error(f"Failed to persist shortlist to DB: {e}")
         finally:
-            session.close()
+            if owns_session:
+                session.close()
 
         return response
