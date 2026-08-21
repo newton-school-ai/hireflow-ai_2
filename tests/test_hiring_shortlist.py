@@ -2,12 +2,39 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
 from src.agents.hiring_shortlist_agent import HiringShortlistAgent
 from src.api.main import app
-from src.config.database import SessionLocal
+from src.config.database import Base
 from src.models.shortlist import Shortlist
+
+TEST_DATABASE_URL = "sqlite:///:memory:"
+
+
+@pytest.fixture(scope="module")
+def engine():
+    """Create an in-memory SQLite engine for the test module."""
+    eng = create_engine(TEST_DATABASE_URL)
+    Base.metadata.create_all(eng)
+    yield eng
+    Base.metadata.drop_all(eng)
+    eng.dispose()
+
+
+@pytest.fixture()
+def db(engine):
+    """Yield a transactional session that rolls back after each test."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = sessionmaker(bind=connection)()
+    yield session
+    session.close()
+    transaction.rollback()
+    connection.close()
+
 
 client = TestClient(app)
 
@@ -94,8 +121,8 @@ def test_agent_csv_parsing(mock_embedding_pipeline):
     assert top_name in ["Student A", "Student C", "Student D"]
 
 
-def test_db_persistence(mock_embedding_pipeline):
-    agent = HiringShortlistAgent(embedding_pipeline=mock_embedding_pipeline)
+def test_db_persistence(mock_embedding_pipeline, db):
+    agent = HiringShortlistAgent(embedding_pipeline=mock_embedding_pipeline, db=db)
     applicants = [{"name": "Test User", "skills": ["Python"], "experience": 1}]
 
     agent.shortlist(
@@ -106,17 +133,13 @@ def test_db_persistence(mock_embedding_pipeline):
         role_title="TestRole",
     )
 
-    session = SessionLocal()
-    try:
-        # Get latest
-        record = session.query(Shortlist).order_by(Shortlist.created_at.desc()).first()
-        assert record is not None
-        assert record.company_name == "TestCorp"
-        assert record.total_applicants == 1
-        assert record.shortlist_size == 5
-        assert len(record.candidates) == 1
-    finally:
-        session.close()
+    # Get latest
+    record = db.query(Shortlist).order_by(Shortlist.created_at.desc()).first()
+    assert record is not None
+    assert record.company_name == "TestCorp"
+    assert record.total_applicants == 1
+    assert record.shortlist_size == 5
+    assert len(record.candidates) == 1
 
 
 def test_api_json_endpoint():
