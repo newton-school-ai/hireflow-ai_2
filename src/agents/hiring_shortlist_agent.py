@@ -5,11 +5,11 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from src.config.database import SessionLocal
 from src.models.job import Job
 from src.models.shortlist import Shortlist
 from src.pipelines.embedding_pipeline import EmbeddingPipeline
 from src.pipelines.match_scorer import score_job
-from src.config.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -142,9 +142,7 @@ class HiringShortlistAgent:
                 raise FileNotFoundError(f"CSV file not found: {path}")
 
             with open(path, "r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    parsed_applicants.append(row)
+                parsed_applicants = list(csv.DictReader(f))
         else:
             parsed_applicants = applicants or []
 
@@ -239,7 +237,7 @@ class HiringShortlistAgent:
             )
             session.add(sl_record)
             session.commit()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             session.rollback()
             logger.error(f"Failed to persist shortlist to DB: {e}")
         finally:
