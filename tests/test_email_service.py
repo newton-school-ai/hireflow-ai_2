@@ -1,4 +1,3 @@
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -35,7 +34,10 @@ def mock_os_path():
 
 @pytest.fixture
 def mock_open_file():
-    with patch("builtins.open", unittest.mock.mock_open(read_data=b"dummy pdf content")) as mock_file:
+    import unittest.mock
+    with patch(
+        "builtins.open", unittest.mock.mock_open(read_data=b"dummy pdf content")
+    ) as mock_file:
         yield mock_file
 
 
@@ -47,21 +49,24 @@ def mock_db_session():
         yield mock_db
 
 
-def test_normal_send_with_attachments(mock_settings, mock_requests, mock_os_path, mock_open_file):
+def test_normal_send_with_attachments(
+    mock_settings, mock_requests, mock_os_path, mock_open_file
+):
     import builtins
+
     service = EmailService()
-    
+
     with patch("builtins.open", builtins.mock.mock_open(read_data=b"dummy content")):
         success = service.send_weekly_report(
             to_email="user@example.com",
             subject="Weekly Report",
             report_html="<h1>Report</h1>",
-            resume_paths=["/path/to/resume1.pdf", "/path/to/resume2.pdf"]
+            resume_paths=["/path/to/resume1.pdf", "/path/to/resume2.pdf"],
         )
 
     assert success is True
     mock_requests.assert_called_once()
-    
+
     call_args = mock_requests.call_args
     payload = call_args.kwargs["json"]
     assert "attachments" in payload
@@ -71,17 +76,17 @@ def test_normal_send_with_attachments(mock_settings, mock_requests, mock_os_path
 
 def test_empty_attachments(mock_settings, mock_requests):
     service = EmailService()
-    
+
     success = service.send_weekly_report(
         to_email="user@example.com",
         subject="Weekly Report",
         report_html="<h1>Report</h1>",
-        resume_paths=[]
+        resume_paths=[],
     )
 
     assert success is True
     mock_requests.assert_called_once()
-    
+
     call_args = mock_requests.call_args
     payload = call_args.kwargs["json"]
     assert "attachments" not in payload
@@ -89,41 +94,44 @@ def test_empty_attachments(mock_settings, mock_requests):
 
 def test_provider_failure_handling(mock_settings, mock_requests):
     service = EmailService()
-    
+
     # Configure mock to return 500 Internal Server Error
     mock_requests.return_value.status_code = 500
     mock_requests.return_value.text = "Internal Server Error"
-    
+
     success = service.send_weekly_report(
         to_email="user@example.com",
         subject="Weekly Report",
         report_html="<h1>Report</h1>",
-        resume_paths=[]
+        resume_paths=[],
     )
 
     assert success is False
     mock_requests.assert_called_once()
 
 
-def test_attachment_size_exceeds_limit(mock_settings, mock_requests, mock_os_path, mock_open_file):
-    mock_exists, mock_size = mock_os_path
+def test_attachment_size_exceeds_limit(
+    mock_settings, mock_requests, mock_os_path, mock_open_file
+):
+    _mock_exists, mock_size = mock_os_path
     # Set size to 11MB per file
-    mock_size.return_value = 11 * 1024 * 1024 
-    
+    mock_size.return_value = 11 * 1024 * 1024
+
     service = EmailService()
-    
+
     import builtins
+
     with patch("builtins.open", builtins.mock.mock_open(read_data=b"dummy content")):
         success = service.send_weekly_report(
             to_email="user@example.com",
             subject="Weekly Report",
             report_html="<h1>Report</h1>",
-            resume_paths=["/path/to/resume1.pdf"]
+            resume_paths=["/path/to/resume1.pdf"],
         )
 
     assert success is True
     mock_requests.assert_called_once()
-    
+
     call_args = mock_requests.call_args
     payload = call_args.kwargs["json"]
     # Attachments should be stripped because size > 10MB
@@ -134,17 +142,19 @@ def test_attachment_size_exceeds_limit(mock_settings, mock_requests, mock_os_pat
 
 def test_update_sent_at(mock_settings, mock_requests, mock_db_session):
     service = EmailService()
-    
+
     # Mocking the report and db session
     mock_report = MagicMock()
-    mock_db_session.query.return_value.filter.return_value.first.return_value = mock_report
-    
+    mock_db_session.query.return_value.filter.return_value.first.return_value = (
+        mock_report
+    )
+
     success = service.send_weekly_report(
         to_email="user@example.com",
         subject="Weekly Report",
         report_html="<h1>Report</h1>",
         resume_paths=[],
-        report_id="123e4567-e89b-12d3-a456-426614174000"
+        report_id="123e4567-e89b-12d3-a456-426614174000",
     )
 
     assert success is True
