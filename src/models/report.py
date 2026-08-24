@@ -69,6 +69,9 @@ class WeeklyReport(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+    sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # -- Relationships --
     user: Mapped["User"] = relationship(  # noqa: F821
