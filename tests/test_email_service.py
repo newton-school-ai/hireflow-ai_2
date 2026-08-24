@@ -54,7 +54,6 @@ def mock_db_session():
 def test_normal_send_with_attachments(
     mock_settings, mock_requests, mock_os_path, mock_open_file
 ):
-
     service = EmailService()
 
     with patch("builtins.open", unittest.mock.mock_open(read_data=b"dummy content")):
@@ -119,7 +118,6 @@ def test_attachment_size_exceeds_limit(
     mock_size.return_value = 11 * 1024 * 1024
 
     service = EmailService()
-
 
     with patch("builtins.open", unittest.mock.mock_open(read_data=b"dummy content")):
         success = service.send_weekly_report(
