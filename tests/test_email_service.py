@@ -1,3 +1,4 @@
+import unittest.mock
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -57,7 +58,7 @@ def test_normal_send_with_attachments(
 
     service = EmailService()
 
-    with patch("builtins.open", builtins.mock.mock_open(read_data=b"dummy content")):
+    with patch("builtins.open", unittest.mock.mock_open(read_data=b"dummy content")):
         success = service.send_weekly_report(
             to_email="user@example.com",
             subject="Weekly Report",
@@ -122,7 +123,7 @@ def test_attachment_size_exceeds_limit(
 
     import builtins
 
-    with patch("builtins.open", builtins.mock.mock_open(read_data=b"dummy content")):
+    with patch("builtins.open", unittest.mock.mock_open(read_data=b"dummy content")):
         success = service.send_weekly_report(
             to_email="user@example.com",
             subject="Weekly Report",
