@@ -35,6 +35,7 @@ def mock_os_path():
 @pytest.fixture
 def mock_open_file():
     import unittest.mock
+
     with patch(
         "builtins.open", unittest.mock.mock_open(read_data=b"dummy pdf content")
     ) as mock_file:
