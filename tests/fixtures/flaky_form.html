@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Job Application — Standard Form</title>
+</head>
+<!--
+    data-test-scenario="flaky" documents this fixture's purpose.
+    It simulates a career portal that may be temporarily unreliable,
+    used to exercise the ApplicationAgent's retry logic.
+-->
+<body data-test-scenario="flaky">
+    <h1>Software Engineer — Apply Now</h1>
+
+    <!--
+        This fixture is a static HTML file and always renders fully.
+
+        The retry behavior is simulated entirely in unit tests:
+        tests mock _fill_and_submit_form() to raise a
+        TemporaryApplicationError on the first call, then succeed on
+        the second — verifying that the agent retries and ultimately
+        returns status="applied".
+
+        The fixture itself exists so tests can reference a real file://
+        URL for the CAPTCHA-check phase of _submit_application(), which
+        must pass cleanly (no CAPTCHA signals present) before reaching
+        the mocked form-filling step.
+    -->
+    <form action="/submit" method="post" data-test-scenario="flaky-first-attempt">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" placeholder="Jane Doe">
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="jane@example.com">
+
+        <label for="resume">Resume (PDF)</label>
+        <input type="file" id="resume" name="resume" accept=".pdf">
+
+        <button type="submit" id="submit-btn">Submit Application</button>
+    </form>
+</body>
+</html>
