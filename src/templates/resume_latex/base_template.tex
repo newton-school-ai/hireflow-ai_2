@@ -1,0 +1,130 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=0.6in]{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+
+\hypersetup{
+    colorlinks=false,
+    hidelinks,
+    pdfstartview=FitH
+}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+\setlist[itemize]{leftmargin=1.2em, labelsep=0.4em, itemsep=2pt, parsep=0pt, topsep=2pt}
+
+\titleformat{\section}
+  {\large\bfseries\scshape}
+  {}
+  {0pt}
+  {}
+  [\vspace{2pt}\hrule\vspace{4pt}]
+
+\titlespacing*{\section}{0pt}{10pt}{4pt}
+
+\begin{document}
+
+% -----------------------------------------------------------------------------
+% Header: Name & Contact Info
+% -----------------------------------------------------------------------------
+\begin{center}
+    {\Huge \bfseries \VAR{name}}\\[4pt]
+    \small
+    \BLOCK{ if contact_str }
+        \VAR{contact_str}
+    \BLOCK{ endif }
+\end{center}
+\vspace{-4pt}
+
+% -----------------------------------------------------------------------------
+% Professional Summary
+% -----------------------------------------------------------------------------
+\BLOCK{ if summary }
+\section*{Professional Summary}
+\VAR{summary}
+\BLOCK{ endif }
+
+% -----------------------------------------------------------------------------
+% Skills
+% -----------------------------------------------------------------------------
+\BLOCK{ if skills }
+\section*{Skills}
+\BLOCK{ if skills_categories }
+\begin{description}[leftmargin=0pt, labelindent=0pt, itemsep=2pt, topsep=2pt]
+\BLOCK{ for category in skills_categories }
+    \item[\textbf{\VAR{category.name}:}] \VAR{category.skills_str}
+\BLOCK{ endfor }
+\end{description}
+\BLOCK{ elif skills_list }
+\VAR{ skills_list }
+\BLOCK{ elif skills_str }
+\VAR{skills_str}
+\BLOCK{ endif }
+\BLOCK{ endif }
+
+% -----------------------------------------------------------------------------
+% Experience
+% -----------------------------------------------------------------------------
+\BLOCK{ if experience }
+\section*{Experience}
+\BLOCK{ for exp in experience }
+\noindent
+\textbf{\VAR{exp.title}}\BLOCK{ if exp.company } -- \textit{\VAR{exp.company}}\BLOCK{ endif }\BLOCK{ if exp.location } (\VAR{exp.location})\BLOCK{ endif } \hfill \textbf{\VAR{exp.dates}}\\[2pt]
+\BLOCK{ if exp.description }
+\VAR{exp.description}\\[2pt]
+\BLOCK{ endif }
+\BLOCK{ if exp.highlights }
+\begin{itemize}
+\BLOCK{ for highlight in exp.highlights }
+    \item \VAR{highlight}
+\BLOCK{ endfor }
+\end{itemize}
+\BLOCK{ endif }
+\vspace{4pt}
+\BLOCK{ endfor }
+\BLOCK{ endif }
+
+% -----------------------------------------------------------------------------
+% Projects
+% -----------------------------------------------------------------------------
+\BLOCK{ if projects }
+\section*{Projects}
+\BLOCK{ for proj in projects }
+\noindent
+\textbf{\VAR{proj.name}}\BLOCK{ if proj.technologies_str } (\textit{\VAR{proj.technologies_str}})\BLOCK{ endif }\BLOCK{ if proj.link } \hfill \texttt{\VAR{proj.link}}\BLOCK{ endif }\\[2pt]
+\BLOCK{ if proj.description }
+\VAR{proj.description}\\[2pt]
+\BLOCK{ endif }
+\BLOCK{ if proj.highlights }
+\begin{itemize}
+\BLOCK{ for highlight in proj.highlights }
+    \item \VAR{highlight}
+\BLOCK{ endfor }
+\end{itemize}
+\BLOCK{ endif }
+\vspace{4pt}
+\BLOCK{ endfor }
+\BLOCK{ endif }
+
+% -----------------------------------------------------------------------------
+% Education
+% -----------------------------------------------------------------------------
+\BLOCK{ if education }
+\section*{Education}
+\BLOCK{ for edu in education }
+\noindent
+\textbf{\VAR{edu.degree}}\BLOCK{ if edu.institution } -- \textit{\VAR{edu.institution}}\BLOCK{ endif }\BLOCK{ if edu.location } (\VAR{edu.location})\BLOCK{ endif } \hfill \textbf{\VAR{edu.dates}}\\[2pt]
+\BLOCK{ if edu.details }
+\VAR{edu.details}\\[2pt]
+\BLOCK{ endif }
+\vspace{4pt}
+\BLOCK{ endfor }
+\BLOCK{ endif }
+
+\end{document}

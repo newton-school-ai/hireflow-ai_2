@@ -36,7 +36,7 @@ sentence-transformers>=3.0.0
 # --- Backend API ---
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
-pydantic>=2.7.0
+pydantic[email]>=2.7.0
 pydantic-settings>=2.2.0
 python-multipart>=0.0.9
 
@@ -58,6 +58,7 @@ tavily-python>=0.3.3
 
 # --- File Handling ---
 python-dotenv>=1.0.1
+pypdf>=4.2.0
 boto3>=1.34.0           # for S3 storage (optional)
 
 # --- Utilities ---
@@ -74,3 +75,4 @@ httpx>=0.27.0           # for TestClient
 # --- Dev Tools ---
 black>=24.4.0
 ruff>=0.4.0
+pre-commit>=3.7.0

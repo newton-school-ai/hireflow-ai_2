@@ -18,5 +18,5 @@ assignees: ''
 <!-- e.g., M3 - Match Scorer -->
 
 ## Acceptance Criteria
-- [ ] 
-- [ ] 
+- [ ]
+- [ ]
