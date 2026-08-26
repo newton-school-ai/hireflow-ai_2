@@ -557,7 +557,7 @@ class PrepGuideAgent:
                 return self._llm_generate_questions(
                     clean_jd, company, is_internship, question_count, categories
                 )
-            except (TypeError, ValueError, json.JSONDecodeError) as e:
+            except (TypeError, ValueError, json.JSONDecodeError, RuntimeError) as e:
                 logger.warning(
                     f"LLM question generation failed: {e}. Using heuristic fallback."
                 )
