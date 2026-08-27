@@ -1,7 +1,7 @@
 """create shortlists table
 
 Revision ID: fc05fcc86e27
-Revises: 002
+Revises: 003
 Create Date: 2026-08-21 18:06:16.367794
 """
 
