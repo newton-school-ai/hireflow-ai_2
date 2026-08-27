@@ -64,6 +64,8 @@ class Settings(BaseSettings):
 
     # Other API Keys
     tavily_api_key: str | None = None
+    email_provider: str = "resend"
+    resend_api_key: str | None = None
     sendgrid_api_key: str | None = None
     from_email: str = "hireflow@yourdomain.com"
     next_public_api_url: str = "http://localhost:8000"
