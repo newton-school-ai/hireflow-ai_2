@@ -1,0 +1,5 @@
+name,skills,experience_years,education
+Student A,"Python;LangChain;FastAPI",0,"BS Computer Science"
+Student B,"Java;Spring;SQL",1,"BS Computer Science"
+Student C,"Python;LangChain;Docker;RAG",0,"BS Computer Science"
+Student D,"Python;RAG;LangGraph;multi-agent",0,"Self-Taught / Bootcamp"
